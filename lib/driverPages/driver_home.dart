@@ -12,6 +12,7 @@ import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/rent_model.dart';
+import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -23,7 +24,7 @@ class DriverHomePage extends StatefulWidget {
 
 class _DriverHomePageState extends State<DriverHomePage> {
   bool isLoading = true;
-  DriverModel? currentDriver;
+  // DriverModel? currentDriver;
   RentModel? rentModel;
   TextEditingController searchController = TextEditingController();
   String searchkey = '';
@@ -32,23 +33,30 @@ class _DriverHomePageState extends State<DriverHomePage> {
     setState(() {
       isLoading = true;
     });
+    // await FirebaseFirestore.instance
+    //     .collection('organisations')
+    //     .doc(currentUser!.organisationId)
+    //     .collection('drivers')
+    //     .doc(currentUser!.userId)
+    //     .get()
+    //     .then((value) {
+    //   currentDriver =
+    //       DriverModel.fromJson(value.data() as Map<String, dynamic>);
+    // });
     await FirebaseFirestore.instance
-        .collection('organisations')
-        .doc(currentUser!.organisationId)
-        .collection('drivers')
+        .collection('users')
         .doc(currentUser!.userId)
         .get()
         .then((value) {
-      currentDriver =
-          DriverModel.fromJson(value.data() as Map<String, dynamic>);
+      currentUser = UserModel.fromJson(value.data() as Map<String, dynamic>);
     });
-    log(currentDriver!.toJson().toString());
-    if (currentDriver!.onRent.isNotEmpty) {
+    log(currentUser!.toJson().toString());
+    if (currentUser!.onRent!.isNotEmpty) {
       await FirebaseFirestore.instance
           .collection('organisations')
           .doc(currentUser!.organisationId)
           .collection('rents')
-          .doc(currentDriver!.onRent)
+          .doc(currentUser!.onRent)
           .get()
           .then(
         (value) {
@@ -74,6 +82,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
         .collection('vehicles')
         .where('on_duty', isEqualTo: false)
         .where('status', isEqualTo: 'active')
+        .where('is_deleted', isEqualTo: false)
         .snapshots()
         .map((event) =>
             event.docs.map((e) => VehicleModel.fromJson(e.data())).toList());
@@ -81,346 +90,241 @@ class _DriverHomePageState extends State<DriverHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ColorConst.backgroundColor,
-      appBar: AppBar(
-        toolbarHeight: h * 0.1,
-        title: const Text('Home',
-            style: TextStyle(
-                color: ColorConst.primaryColor, fontWeight: FontWeight.bold)),
-        backgroundColor: ColorConst.boxColor,
-        elevation: 2,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: ColorConst.primaryColor),
-            onPressed: () => _logOutDialog(),
-          ),
-        ],
-      ),
-      body: isLoading
+    return SafeArea(
+      child: isLoading
           ? const Center(
               child: CupertinoActivityIndicator(
                 color: ColorConst.primaryColor,
               ),
             )
-          : currentDriver!.onRent.isNotEmpty
-              ? driverOnDuty()
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.all(w * 0.03),
-                      child: TextFormField(
-                        controller: searchController,
-                        onChanged: (value) {
-                          setState(() {
-                            searchkey = value;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search',
-                          suffixIcon: Padding(
-                              padding: EdgeInsets.all(w * 0.03),
-                              child: Icon(
-                                Icons.search,
-                                color: ColorConst.primaryColor.withOpacity(0.5),
-                              )),
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(w * 0.05)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(w * 0.05),
-                            borderSide: BorderSide(
-                                color:
-                                    ColorConst.primaryColor.withOpacity(0.3)),
-                          ),
-                          filled: true,
-                          fillColor: ColorConst.boxColor,
-                          hintStyle: const TextStyle(color: Colors.grey),
-                        ),
-                        style: const TextStyle(color: ColorConst.textColor),
-                      ),
-                    ),
-                    StreamBuilder(
-                        stream: getVehicles(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return const Expanded(
-                              child: Center(
-                                child: CupertinoActivityIndicator(
-                                    color: ColorConst.primaryColor),
-                              ),
-                            );
-                          }
-                          return snapshot.data!.isEmpty
-                              ? const Expanded(
-                                  child: Center(
-                                    child: Text('No vehicles added!',
-                                        style: TextStyle(
-                                            color: ColorConst.primaryColor)),
-                                  ),
-                                )
-                              : Expanded(
-                                  child: ListView.builder(
-                                    // shrinkWrap: true,
-                                    // physics: const NeverScrollableScrollPhysics(),
-                                    itemCount: snapshot.data!.length,
-                                    itemBuilder: (context, index) {
-                                      VehicleModel vehicle =
-                                          snapshot.data![index];
-                                      return vehicle.vehicleNumber
-                                              .toLowerCase()
-                                              .contains(searchkey.toLowerCase())
-                                          ? Container(
-                                              width: w,
-                                              height: h * 0.2,
-                                              margin: EdgeInsets.all(w * 0.05),
-                                              padding: EdgeInsets.all(w * 0.05),
-                                              decoration: BoxDecoration(
-                                                  color: ColorConst
-                                                      .backgroundColor,
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          w * 0.03),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                        color: ColorConst
-                                                            .primaryColor
-                                                            .withOpacity(0.5),
-                                                        blurRadius: 10,
-                                                        spreadRadius: 5)
-                                                  ]),
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceEvenly,
-                                                children: [
-                                                  Text(vehicle.vehicleNumber,
-                                                      style: TextStyle(
-                                                          fontSize: w * 0.06,
-                                                          color: ColorConst
-                                                              .primaryColor,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  PopupMenuButton(
-                                                    color: ColorConst.boxColor,
-                                                    onSelected:
-                                                        (shiftValue) async {
-                                                      var getRents =
-                                                          await FirebaseFirestore
-                                                              .instance
-                                                              .collection(
-                                                                  'organisations')
-                                                              .doc(currentUser!
-                                                                  .organisationId)
-                                                              .collection(
-                                                                  'rents')
-                                                              .get();
-                                                      String rentId =
-                                                          'rentid${getRents.size}';
-                                                      await FirebaseFirestore
-                                                          .instance
-                                                          .collection(
-                                                              'organisations')
-                                                          .doc(currentUser!
-                                                              .organisationId)
-                                                          .collection('rents')
-                                                          .doc(rentId)
-                                                          .set(RentModel(
-                                                                  rentId:
-                                                                      rentId,
-                                                                  driverId:
-                                                                      currentDriver!
-                                                                          .driverId,
-                                                                  vehicleId: vehicle
-                                                                      .vehicleId,
-                                                                  vehicleNumber:
-                                                                      vehicle
-                                                                          .vehicleNumber,
-                                                                  startTime:
-                                                                      Timestamp
-                                                                          .now(),
-                                                                  rent: vehicle
-                                                                      .rent,
-                                                                  shift: int.parse(
-                                                                      shiftValue),
-                                                                  totalTrips: 0,
-                                                                  totalEarnings:
-                                                                      0,
-                                                                  cashCollected:
-                                                                      0,
-                                                                  totaltoPay: 0,
-                                                                  refund: 0,
-                                                                  rentStatus:
-                                                                      'ongoing')
-                                                              .toJson());
-                                                      await FirebaseFirestore
-                                                          .instance
-                                                          .collection(
-                                                              'organisations')
-                                                          .doc(currentUser!
-                                                              .organisationId)
-                                                          .collection(
-                                                              'vehicles')
-                                                          .doc(
-                                                              vehicle.vehicleId)
-                                                          .update({
-                                                        'driver': currentDriver!
-                                                            .driverId,
-                                                        'on_duty': true,
-                                                        'start_time':
-                                                            DateTime.now(),
-                                                        'selected_shift':
-                                                            int.parse(
-                                                                shiftValue)
-                                                      });
-                                                      await FirebaseFirestore
-                                                          .instance
-                                                          .collection(
-                                                              'organisations')
-                                                          .doc(currentUser!
-                                                              .organisationId)
-                                                          .collection('drivers')
-                                                          .doc(currentUser!
-                                                              .userId)
-                                                          .update({
-                                                        'on_rent': rentId
-                                                      });
-                                                      await getDriverDetails();
-                                                    },
-                                                    itemBuilder: (context) => [
-                                                      const PopupMenuItem(
-                                                          value: "1",
-                                                          child: Text(
-                                                            "12 hrs",
-                                                            style: TextStyle(
-                                                                color: ColorConst
-                                                                    .primaryColor),
-                                                          )),
-                                                      const PopupMenuItem(
-                                                          value: "2",
-                                                          child: Text(
-                                                            "24 hrs",
-                                                            style: TextStyle(
-                                                                color: ColorConst
-                                                                    .primaryColor),
-                                                          )),
-                                                    ],
-                                                    child: const ElevatedButton(
-                                                        style: ButtonStyle(
-                                                            backgroundColor:
-                                                                WidgetStatePropertyAll(
-                                                                    ColorConst
-                                                                        .boxColor)),
-                                                        onPressed: null,
-                                                        child: Text(
-                                                          'Start duty',
-                                                          style: TextStyle(
-                                                              color: ColorConst
-                                                                  .primaryColor,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold),
-                                                        )),
-                                                  )
-                                                ],
-                                              ))
-                                          : const SizedBox();
-                                    },
-                                  ),
-                                );
-                        }),
-                  ],
-                ),
+          : Scaffold(
+              body: NestedScrollView(
+                  physics: currentUser!.onRent!.isNotEmpty
+                      ? const NeverScrollableScrollPhysics()
+                      : const ScrollPhysics(),
+                  headerSliverBuilder: (context, innerBoxIsScrolled) =>
+                      [appBar(), if (currentUser!.onRent!.isEmpty) searchBar()],
+                  body: currentUser!.onRent!.isNotEmpty
+                      ? driverOnDuty()
+                      : driverOffDuty())),
     );
   }
 
-  Widget _buildDriverStatsCard() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Card(
-        color: ColorConst.boxColor,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+  Widget appBar() {
+    return SliverAppBar(
+      foregroundColor: ColorConst.textColor,
+      toolbarHeight: h * 0.1,
+      title: Text(currentUser!.onRent!.isNotEmpty
+          ? 'You are on duty'
+          : 'Select vehicle'),
+      backgroundColor: ColorConst.boxColor,
+      elevation: 2,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications, color: ColorConst.textColor),
+          onPressed: () {},
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatItem('Today\'s Trips', '0'),
-              _buildStatItem('Today\'s Earnings', '\$0'),
-              _buildStatItem('Week Total', '\$0'),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: ColorConst.textColor.withOpacity(0.7),
-            fontSize: 12,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: ColorConst.primaryColor,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+        IconButton(
+          icon: const Icon(Icons.wallet, color: ColorConst.textColor),
+          onPressed: () {},
         ),
       ],
     );
   }
 
-  Widget titleText() {
-    return Padding(
-      padding: EdgeInsets.all(w * 0.03),
-      child: SizedBox(
-        width: w * 0.8,
-        // height: h * 0.2,
-        child: Column(
-          // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Welcome back',
-                style: TextStyle(
-                    fontSize: w * 0.05,
-                    fontWeight: FontWeight.bold,
-                    color: ColorConst.primaryColor)),
-            Text('${currentDriver!.driverName}!',
-                style: TextStyle(
-                    fontSize: w * 0.06,
-                    fontWeight: FontWeight.bold,
-                    color: ColorConst.primaryColor)),
-            SizedBox(
-              height: h * 0.02,
+  Widget searchBar() {
+    return SliverAppBar(
+      leading: const SizedBox(),
+      backgroundColor: ColorConst.backgroundColor,
+      surfaceTintColor: ColorConst.backgroundColor,
+      toolbarHeight: h * 0.1,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Padding(
+          padding: EdgeInsets.all(w * 0.03),
+          child: TextFormField(
+            controller: searchController,
+            onChanged: (value) {
+              setState(() {
+                searchkey = value;
+              });
+            },
+            decoration: InputDecoration(
+              hintText: 'Search vehicle',
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(w * 0.05)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(w * 0.05),
+                borderSide:
+                    BorderSide(color: ColorConst.primaryColor.withOpacity(0.3)),
+              ),
+              filled: true,
+              fillColor: ColorConst.boxColor,
+              hintStyle: const TextStyle(color: Colors.grey),
             ),
-            Text(
-              DateFormat.MMMMEEEEd().format(DateTime.now()),
-              style: TextStyle(
-                  fontSize: w * 0.04,
-                  fontWeight: FontWeight.bold,
-                  color: ColorConst.primaryColor.withOpacity(0.8)),
-            ),
-            SizedBox(width: w * 0.04),
-            Text(
-              DateFormat.Hm().format(DateTime.now()),
-              style: TextStyle(
-                  fontSize: w * 0.04,
-                  fontWeight: FontWeight.bold,
-                  color: ColorConst.primaryColor.withOpacity(0.8)),
-            )
-          ],
+            style: const TextStyle(color: ColorConst.textColor),
+          ),
         ),
       ),
+      pinned: true,
+    );
+  }
+
+  Widget driverOffDuty() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        StreamBuilder(
+            stream: getVehicles(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Expanded(
+                  child: Center(
+                    child: CupertinoActivityIndicator(
+                        color: ColorConst.primaryColor),
+                  ),
+                );
+              }
+              return snapshot.data!.isEmpty
+                  ? const Expanded(
+                      child: Center(
+                        child: Text('No vehicles added!',
+                            style: TextStyle(color: ColorConst.primaryColor)),
+                      ),
+                    )
+                  : Expanded(
+                      child: ListView.builder(
+                        // shrinkWrap: true,
+                        // physics: const NeverScrollableScrollPhysics(),
+                        itemCount: snapshot.data!.length,
+                        itemBuilder: (context, index) {
+                          VehicleModel vehicle = snapshot.data![index];
+                          return vehicle.vehicleNumber
+                                  .toLowerCase()
+                                  .contains(searchkey.toLowerCase())
+                              ? Container(
+                                  height: h * 0.2,
+                                  padding: EdgeInsets.all(w * 0.03),
+                                  margin: EdgeInsets.all(w * 0.03),
+                                  decoration: BoxDecoration(
+                                    color: ColorConst.boxColor,
+                                    borderRadius:
+                                        BorderRadius.circular(w * 0.03),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Text(vehicle.vehicleNumber,
+                                          style: TextStyle(
+                                              fontSize: w * 0.06,
+                                              color: ColorConst.textColor,
+                                              fontWeight: FontWeight.bold)),
+                                      Text(
+                                          'Remaining trips : ${vehicle.targetTrips - vehicle.totalTrips}',
+                                          style: const TextStyle(
+                                              color: ColorConst.textColor,
+                                              fontWeight: FontWeight.bold)),
+                                      PopupMenuButton(
+                                        color: ColorConst.boxColor,
+                                        onSelected: (shiftValue) async {
+                                          var getRents = await FirebaseFirestore
+                                              .instance
+                                              .collection('organisations')
+                                              .doc(currentUser!.organisationId)
+                                              .collection('rents')
+                                              .get();
+                                          String rentId =
+                                              'rentid${getRents.size}';
+                                          await FirebaseFirestore.instance
+                                              .collection('organisations')
+                                              .doc(currentUser!.organisationId)
+                                              .collection('rents')
+                                              .doc(rentId)
+                                              .set(RentModel(
+                                                      rentId: rentId,
+                                                      driverId:
+                                                          currentUser!.userId,
+                                                      vehicleId:
+                                                          vehicle.vehicleId,
+                                                      vehicleNumber:
+                                                          vehicle.vehicleNumber,
+                                                      startTime:
+                                                          Timestamp.now(),
+                                                      rent: vehicle.rent,
+                                                      shift:
+                                                          int.parse(shiftValue),
+                                                      totalTrips: 0,
+                                                      totalEarnings: 0,
+                                                      cashCollected: 0,
+                                                      totaltoPay: 0,
+                                                      refund: 0,
+                                                      rentStatus: 'ongoing')
+                                                  .toJson());
+                                          await FirebaseFirestore.instance
+                                              .collection('organisations')
+                                              .doc(currentUser!.organisationId)
+                                              .collection('vehicles')
+                                              .doc(vehicle.vehicleId)
+                                              .update({
+                                            'driver': currentUser!.userId,
+                                            'on_duty': true,
+                                            'start_time': DateTime.now(),
+                                            'selected_shift':
+                                                int.parse(shiftValue)
+                                          });
+                                          // await FirebaseFirestore.instance
+                                          //     .collection('organisations')
+                                          //     .doc(currentUser!.organisationId)
+                                          //     .collection('drivers')
+                                          //     .doc(currentUser!.userId)
+                                          //     .update({'on_rent': rentId});
+                                          await FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(currentUser!.userId)
+                                              .update({'on_rent': rentId});
+                                          await getDriverDetails();
+                                        },
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                              value: "1",
+                                              child: Text(
+                                                "12 hrs",
+                                                style: TextStyle(
+                                                    color:
+                                                        ColorConst.textColor),
+                                              )),
+                                          const PopupMenuItem(
+                                              value: "2",
+                                              child: Text(
+                                                "24 hrs",
+                                                style: TextStyle(
+                                                    color:
+                                                        ColorConst.textColor),
+                                              )),
+                                        ],
+                                        child: const ElevatedButton(
+                                            style: ButtonStyle(
+                                                backgroundColor:
+                                                    WidgetStatePropertyAll(
+                                                        ColorConst
+                                                            .primaryColor)),
+                                            onPressed: null,
+                                            child: Text(
+                                              'Start duty',
+                                              style: TextStyle(
+                                                  color: ColorConst
+                                                      .backgroundColor,
+                                                  fontWeight: FontWeight.bold),
+                                            )),
+                                      )
+                                    ],
+                                  ))
+                              : const SizedBox();
+                        },
+                      ),
+                    );
+            }),
+      ],
     );
   }
 
@@ -451,22 +355,21 @@ class _DriverHomePageState extends State<DriverHomePage> {
                         boxShadow: [
                           BoxShadow(
                               color: ColorConst.primaryColor.withOpacity(0.5),
-                              blurRadius: 10,
-                              spreadRadius: 5)
+                              blurRadius: 4,
+                              spreadRadius: 1)
                         ]),
                     child: Column(
                       children: [
                         Text(rentModel!.vehicleNumber,
                             style: TextStyle(
                                 fontSize: w * 0.06,
-                                color: ColorConst.primaryColor,
+                                color: ColorConst.textColor,
                                 fontWeight: FontWeight.bold)),
                         SizedBox(height: h * 0.02),
                         Text(
                             'Started time : ${DateFormat.jm().format(rentModel!.startTime.toDate())}',
-                            style: TextStyle(
-                                fontSize: w * 0.04,
-                                color: ColorConst.primaryColor,
+                            style: const TextStyle(
+                                color: ColorConst.textColor,
                                 fontWeight: FontWeight.bold)),
                         SizedBox(height: h * 0.02),
                         TextFormField(
@@ -931,47 +834,5 @@ class _DriverHomePageState extends State<DriverHomePage> {
               ),
             ),
           );
-  }
-
-  _logOutDialog() {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColorConst.boxColor,
-        title: const Text('Log out?',
-            style: TextStyle(color: ColorConst.primaryColor)),
-        content: const Text('Are you sure you want to log out?',
-            style: TextStyle(color: ColorConst.primaryColor)),
-        actions: [
-          TextButton(
-              style: const ButtonStyle(
-                foregroundColor:
-                    WidgetStatePropertyAll(ColorConst.primaryColor),
-              ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('No')),
-          TextButton(
-              style: const ButtonStyle(
-                foregroundColor:
-                    WidgetStatePropertyAll(ColorConst.backgroundColor),
-                backgroundColor:
-                    WidgetStatePropertyAll(ColorConst.primaryColor),
-              ),
-              onPressed: () async {
-                await FirebaseAuth.instance.signOut();
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setBool('isLogged', false);
-                prefs.clear();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  CupertinoDialogRoute(
-                      builder: (context) => const AuthPage(), context: context),
-                  (route) => false,
-                );
-              },
-              child: const Text('Yes')),
-        ],
-      ),
-    );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
-
+import 'dart:developer';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,11 +11,9 @@ import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:zero/driverPages/driver_bottom_page.dart';
-import 'package:zero/driverPages/driver_home.dart';
 import 'package:zero/models/user_model.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:animated_splash_screen/animated_splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,32 +23,8 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  bool loggedIn = false;
-  Future getStorageData() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String jsonData = prefs.getString('currentUser') ?? '';
-    if (jsonData.isNotEmpty) {
-      Map<String, dynamic> currentUserData = json.decode(jsonData);
-      currentUser = UserModel.fromJson(currentUserData);
-    }
-    setState(() {
-      loggedIn = prefs.getBool('isLogged') ?? false;
-    });
-  }
-
-  @override
-  void initState() {
-    getStorageData();
-    super.initState();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,30 +32,130 @@ class _MyAppState extends State<MyApp> {
     h = MediaQuery.of(context).size.height;
     return GestureDetector(
       onTap: () {
-        FocusManager.instance.primaryFocus!.unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
       },
       child: MaterialApp(
-          title: 'Zer0',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            scaffoldBackgroundColor: ColorConst.backgroundColor,
-            textTheme: GoogleFonts.manropeTextTheme(),
-            useMaterial3: true,
-          ),
-          home: AnimatedSplashScreen(
-            duration: 1000,
-            backgroundColor: ColorConst.backgroundColor,
-            splash: const Center(
-              child: CupertinoActivityIndicator(
-                color: ColorConst.primaryColor,
-              ),
+        title: 'Zer0',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          scaffoldBackgroundColor: ColorConst.backgroundColor,
+          textTheme: GoogleFonts.manropeTextTheme(),
+          useMaterial3: true,
+        ),
+        home: SplashScreen(),
+      ),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // addAdmin();
+    _initializeApp();
+  }
+
+  // addAdmin() async {
+  //   // await FirebaseFirestore.instance.collection('users').doc('zer0user1').set({
+  //   //   'is_blocked': '',
+  //   //   'is_deleted': false,
+  //   //   'mobile_number': '+919487022519',
+  //   //   'organisation_id': 'N5DGSiAVziV3dOtuuewi',
+  //   //   'organisation_name': 'Zero uber',
+  //   //   'status': 'ACTIVE',
+  //   //   'user_created_on': DateTime.now().toString(),
+  //   //   'user_id': 'zer0user1',
+  //   //   'user_name': 'Fazil naz Kolambil',
+  //   //   'user_role': 'ADMIN'
+  //   // });
+  //   try {
+  //     var user = await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .doc('zer0user1')
+  //         .get();
+  //     currentUser = UserModel.fromJson(user.data() as Map<String, dynamic>);
+  //     log(currentUser!.toJson().toString());
+  //     SharedPreferences prefs = await SharedPreferences.getInstance();
+  //     prefs.setBool('isLogged', true);
+  //     prefs.setString('currentUser', json.encode(user.data()));
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
+
+  Future<void> _initializeApp() async {
+    await Future.delayed(const Duration(milliseconds: 1500));
+    await _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      bool isLoggedIn = prefs.getBool('isLogged') ?? false;
+      if (isLoggedIn) {
+        String? userJson = prefs.getString('currentUser');
+        if (userJson != null && userJson.isNotEmpty) {
+          try {
+            Map<String, dynamic> userData = json.decode(userJson);
+            currentUser = UserModel.fromJson(userData);
+            if (currentUser!.userRole.toUpperCase() == 'ADMIN') {
+              _navigateTo(const AdminBottomBar());
+            } else {
+              _navigateTo(const DriverBottomBar());
+            }
+          } catch (e) {
+            print("Error parsing user data: $e");
+            await prefs.clear();
+            _navigateTo(const AuthPage());
+          }
+        } else {
+          _navigateTo(const AuthPage());
+        }
+      } else {
+        _navigateTo(const AuthPage());
+      }
+    } catch (e) {
+      print("Error during authentication check: $e");
+      _navigateTo(const AuthPage());
+    }
+  }
+
+  void _navigateTo(Widget screen) {
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        CupertinoPageRoute(builder: (_) => screen),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: ColorConst.backgroundColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              ImageConst.logo,
+              width: w * 0.5,
+              height: w * 0.5,
             ),
-            nextScreen: !loggedIn
-                ? const AuthPage()
-                : currentUser!.userRole.toUpperCase() == 'ADMIN'
-                    ? const AdminBottomBar()
-                    : const DriverBottomBar(),
-          )),
+            const SizedBox(height: 30),
+            const CupertinoActivityIndicator(
+              color: ColorConst.primaryColor,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

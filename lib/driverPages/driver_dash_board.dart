@@ -16,29 +16,29 @@ class DriverDashboard extends StatefulWidget {
 class _DriverDashboardState extends State<DriverDashboard> {
   DateTime currentWeekStart =
       DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
-  DriverModel? driverData;
+  // DriverModel? driverData;
   bool isLoading = false;
-  Future getDriver() async {
-    setState(() {
-      isLoading = true;
-    });
-    await FirebaseFirestore.instance
-        .collection('organisations')
-        .doc(currentUser!.organisationId)
-        .collection('drivers')
-        .doc(currentUser!.userId)
-        .get()
-        .then((value) {
-      driverData = DriverModel.fromJson(value.data() as Map<String, dynamic>);
-    });
-    setState(() {
-      isLoading = false;
-    });
-  }
+  // Future getDriver() async {
+  //   setState(() {
+  //     isLoading = true;
+  //   });
+  //   await FirebaseFirestore.instance
+  //       .collection('organisations')
+  //       .doc(currentUser!.organisationId)
+  //       .collection('drivers')
+  //       .doc(currentUser!.userId)
+  //       .get()
+  //       .then((value) {
+  //     driverData = DriverModel.fromJson(value.data() as Map<String, dynamic>);
+  //   });
+  //   setState(() {
+  //     isLoading = false;
+  //   });
+  // }
 
   @override
   void initState() {
-    getDriver();
+    // getDriver();
     super.initState();
   }
 
@@ -386,7 +386,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
             radius: 30,
             backgroundColor: ColorConst.primaryColor.withOpacity(0.3),
             child: Text(
-              driverData!.driverName.toString()[0],
+              currentUser!.userName.toString()[0],
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -401,7 +401,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  driverData!.driverName.toString(),
+                  currentUser!.userName.toString(),
                   style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -413,7 +413,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
                     const Icon(Icons.phone, size: 16, color: Colors.grey),
                     SizedBox(width: w * 0.03),
                     Text(
-                      driverData!.mobileNumber.toString(),
+                      currentUser!.mobileNumber.toString(),
                       style: const TextStyle(
                         color: Colors.grey,
                       ),
@@ -426,15 +426,17 @@ class _DriverDashboardState extends State<DriverDashboard> {
                     Icon(
                       Icons.wallet,
                       size: 16,
-                      color: driverData!.wallet > 0 ? Colors.green : Colors.red,
+                      color:
+                          currentUser!.wallet! > 0 ? Colors.green : Colors.red,
                     ),
                     SizedBox(width: w * 0.03),
                     Text(
-                      driverData!.wallet.toStringAsFixed(2),
+                      currentUser!.wallet!.toStringAsFixed(2),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color:
-                            driverData!.wallet > 0 ? Colors.green : Colors.red,
+                        color: currentUser!.wallet! > 0
+                            ? Colors.green
+                            : Colors.red,
                       ),
                     ),
                   ],
@@ -448,7 +450,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
   }
 
   Widget driverStats() {
-    int remainingTrips = driverData!.targetTrips - driverData!.totalTrips;
+    int remainingTrips = currentUser!.targetTrips! - currentUser!.totalTrips!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -479,7 +481,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               Column(
                 children: [
                   Text(
-                    driverData!.totalShifts.toString(),
+                    currentUser!.totalShifts.toString(),
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -498,7 +500,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               Column(
                 children: [
                   Text(
-                    driverData!.totalTrips.toString(),
+                    currentUser!.totalTrips.toString(),
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -576,21 +578,21 @@ class _DriverDashboardState extends State<DriverDashboard> {
   }
 
   Widget buildBreakDown() {
-    double totalIncome = driverData!.totalEarnings +
-        driverData!.refund -
-        driverData!.cashCollected;
-    double balance = totalIncome - driverData!.vehicleRent;
+    double totalIncome = currentUser!.totalEarnings! +
+        currentUser!.refund! -
+        currentUser!.cashCollected!;
+    double balance = totalIncome - currentUser!.vehicleRent!;
     return Column(
       children: [
-        _breakdown(
+        _buildTextRow(
             label: 'Total earnings',
-            value: '₹ ${driverData!.totalEarnings.toStringAsFixed(2)}'),
-        _breakdown(
+            value: '₹ ${currentUser!.totalEarnings!.toStringAsFixed(2)}'),
+        _buildTextRow(
             label: 'Refund',
-            value: '₹ ${driverData!.refund.toStringAsFixed(2)}'),
-        _breakdown(
+            value: '₹ ${currentUser!.refund!.toStringAsFixed(2)}'),
+        _buildTextRow(
             label: 'Cash collected',
-            value: '₹ ${driverData!.cashCollected.toStringAsFixed(2)}'),
+            value: '₹ ${currentUser!.cashCollected!.toStringAsFixed(2)}'),
         Divider(),
         Padding(
           padding: EdgeInsets.all(w * 0.02),
@@ -614,10 +616,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
             ],
           ),
         ),
-        _breakdown(
+        _buildTextRow(
             label: 'Vehicle rent',
-            value: '-${driverData!.vehicleRent.toStringAsFixed(2)}'),
-        Divider(),
+            value: '-${currentUser!.vehicleRent!.toStringAsFixed(2)}'),
+        const Divider(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -641,7 +643,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
     );
   }
 
-  _breakdown({required String label, required String value}) {
+  _buildTextRow({required String label, required String value}) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: w * 0.02, vertical: w * 0.03),
       child: Row(

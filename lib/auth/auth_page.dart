@@ -11,8 +11,16 @@ import 'package:zero/adminPages/screens/admin_bottom_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/driverPages/driver_bottom_page.dart';
-import 'package:zero/driverPages/driver_home.dart';
 import 'package:zero/models/user_model.dart';
+
+enum AuthState {
+  initial,
+  sendingOTP,
+  otpSent,
+  verifyingOTP,
+  authenticated,
+  error
+}
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -26,56 +34,130 @@ class _AuthPageState extends State<AuthPage> {
   final mobileNumberController = TextEditingController();
   final otpController = TextEditingController();
 
-  bool isLoading = false;
-  bool otpField = false;
+  AuthState _authState = AuthState.initial;
   String _verificationId = "";
+  String _errorMessage = "";
+  int? _resendToken;
+  bool _canResendOTP = false;
+  int _resendCountdown = 0;
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   checkLoggedInStatus();
+  // }
+
+  // Future<void> checkLoggedInStatus() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   bool isLoggedIn = prefs.getBool('isLogged') ?? false;
+  //   if (isLoggedIn) {
+  //     String? userJson = prefs.getString('currentUser');
+  //     if (userJson != null && userJson.isNotEmpty) {
+  //       try {
+  //         Map<String, dynamic> userData = json.decode(userJson);
+  //         currentUser = UserModel.fromJson(userData);
+
+  //         // Add a small delay to allow the app to initialize properly
+  //         await Future.delayed(Duration(milliseconds: 500));
+
+  //         if (currentUser!.userRole.toUpperCase() == 'ADMIN') {
+  //           Navigator.pushReplacement(
+  //             context,
+  //             CupertinoPageRoute(builder: (context) => AdminBottomBar()),
+  //           );
+  //         } else {
+  //           Navigator.pushReplacement(
+  //             context,
+  //             CupertinoPageRoute(builder: (context) => DriverBottomBar()),
+  //           );
+  //         }
+  //       } catch (e) {
+  //         // Invalid user data in preferences, clear and continue with login
+  //         await prefs.clear();
+  //       }
+  //     }
+  //   }
+  // }
 
   void verifyPhoneNumber(String mobileNumber) async {
     try {
       setState(() {
-        isLoading = true;
+        _authState = AuthState.sendingOTP;
+        _errorMessage = "";
       });
 
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: mobileNumber,
+        timeout: Duration(seconds: 60),
+        forceResendingToken: _resendToken,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          await FirebaseAuth.instance.signInWithCredential(credential);
-          checkUserInFirestore();
+          // Auto-verification completed (usually on Android)
+          await _signInWithCredential(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(e.message ?? "Verification failed")));
           setState(() {
-            isLoading = false;
+            _authState = AuthState.error;
+            _errorMessage = e.message ?? "Verification failed";
           });
         },
         codeSent: (String verificationId, int? resendToken) {
           setState(() {
             _verificationId = verificationId;
-            otpField = true;
-            isLoading = false;
+            _resendToken = resendToken;
+            _authState = AuthState.otpSent;
+            _canResendOTP = false;
+            _resendCountdown = 30; // 30 seconds cooldown
           });
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("OTP sent successfully!")));
+
+          // Start countdown for resend button
+          _startResendTimer();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("OTP sent successfully!")));
         },
         codeAutoRetrievalTimeout: (String verificationId) {
-          setState(() {
-            isLoading = false;
-          });
+          // Auto-retrieval timeout
+          if (_authState == AuthState.sendingOTP) {
+            setState(() {
+              _authState = AuthState.otpSent;
+            });
+          }
         },
       );
     } catch (e) {
       setState(() {
-        isLoading = false;
+        _authState = AuthState.error;
+        _errorMessage = "Failed to send OTP: $e";
       });
-      print('CATCH ERROR: $e');
     }
   }
 
+  void _startResendTimer() {
+    Future.delayed(Duration(seconds: 1), () {
+      if (mounted && _resendCountdown > 0) {
+        setState(() {
+          _resendCountdown--;
+        });
+        _startResendTimer();
+      } else if (mounted) {
+        setState(() {
+          _canResendOTP = true;
+        });
+      }
+    });
+  }
+
   void verifyOTP(String otp) async {
+    if (otp.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please enter a valid 6-digit OTP")));
+      return;
+    }
+
     try {
       setState(() {
-        isLoading = true;
+        _authState = AuthState.verifyingOTP;
+        _errorMessage = "";
       });
 
       PhoneAuthCredential credential = PhoneAuthProvider.credential(
@@ -83,65 +165,95 @@ class _AuthPageState extends State<AuthPage> {
         smsCode: otp,
       );
 
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
-
-      if (userCredential.user != null) {
-        await checkUserInFirestore();
-      }
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Invalid OTP. Please try again.")));
-    } finally {
+      await _signInWithCredential(credential);
+    } catch (e) {
       setState(() {
-        isLoading = false;
+        _authState = AuthState.error;
+        _errorMessage = "Invalid OTP. Please try again.";
       });
     }
   }
 
-  Future<void> checkUserInFirestore() async {
+  Future<void> _signInWithCredential(PhoneAuthCredential credential) async {
     try {
-      User? user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        var userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .where('mobile_number', isEqualTo: user.phoneNumber)
-            .get();
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
 
-        if (userDoc.docs.isNotEmpty) {
-          currentUser = UserModel.fromJson(userDoc.docs.first.data());
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          prefs.setBool('isLogged', true);
-          prefs.setString(
-              'currentUser', json.encode(userDoc.docs.first.data()));
-          if (currentUser!.userRole.toUpperCase() == 'ADMIN') {
-            Navigator.pushReplacement(
-              context,
-              CupertinoPageRoute(
-                builder: (context) => AdminBottomBar(),
-              ),
-            );
-          } else {
-            Navigator.pushReplacement(
-              context,
-              CupertinoPageRoute(
-                builder: (context) => DriverBottomBar(),
-              ),
-            );
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text(
-                  "You haven't registered yet. Please contact your Admin!")));
+      if (userCredential.user != null) {
+        await checkUserInFirestore(userCredential.user!);
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _authState = AuthState.error;
+        _errorMessage = e.message ?? "Authentication failed";
+      });
+    }
+  }
+
+  Future<void> checkUserInFirestore(User firebaseUser) async {
+    try {
+      setState(() {
+        _authState = AuthState.authenticated;
+      });
+
+      var userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .where('mobile_number', isEqualTo: firebaseUser.phoneNumber)
+          .get();
+
+      if (userDoc.docs.isNotEmpty) {
+        // User exists in Firestore
+        Map<String, dynamic> userData = userDoc.docs.first.data();
+
+        // Check if user is blocked
+        if (userData['is_blocked'].isNotEmpty) {
           setState(() {
-            otpField = false;
+            _authState = AuthState.error;
+            _errorMessage =
+                "Your account has been blocked due to ${userData['is_blocked']}. Please contact admin.";
           });
+          await FirebaseAuth.instance.signOut();
+          return;
         }
+
+        // Check if user is deleted
+        if (userData['is_deleted'] == true) {
+          setState(() {
+            _authState = AuthState.error;
+            _errorMessage =
+                "Your account has been deleted. Please contact admin.";
+          });
+          await FirebaseAuth.instance.signOut();
+          return;
+        }
+        currentUser = UserModel.fromJson(userData);
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setBool('isLogged', true);
+        prefs.setString('currentUser', json.encode(userData));
+        if (currentUser!.userRole.toUpperCase() == 'ADMIN') {
+          Navigator.pushReplacement(
+            context,
+            CupertinoPageRoute(builder: (context) => const AdminBottomBar()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            CupertinoPageRoute(builder: (context) => const DriverBottomBar()),
+          );
+        }
+      } else {
+        setState(() {
+          _authState = AuthState.error;
+          _errorMessage =
+              "You haven't registered yet. Please contact your Admin!";
+        });
+        await FirebaseAuth.instance.signOut();
       }
     } catch (e) {
       print("Error checking Firestore: $e");
       setState(() {
-        otpField = false;
+        _authState = AuthState.error;
+        _errorMessage = "Error loading user data: $e";
       });
     }
   }
@@ -157,7 +269,7 @@ class _AuthPageState extends State<AuthPage> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        FocusManager.instance.primaryFocus!.unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
       },
       child: Scaffold(
         body: SafeArea(
@@ -167,9 +279,7 @@ class _AuthPageState extends State<AuthPage> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
-                  height: h * 0.1,
-                ),
+                SizedBox(height: h * 0.1),
                 Image.asset(
                   ImageConst.logo,
                   width: w * 0.5,
@@ -179,8 +289,11 @@ class _AuthPageState extends State<AuthPage> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    otpField ? 'Enter the OTP' : 'Enter your Mobile number',
-                    textAlign: TextAlign.center,
+                    _authState == AuthState.otpSent ||
+                            _authState == AuthState.verifyingOTP
+                        ? 'Enter the OTP'
+                        : 'Enter your Mobile number',
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.7),
                       fontSize: w * 0.04,
@@ -192,10 +305,11 @@ class _AuthPageState extends State<AuthPage> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      // Mobile number Field
                       TextFormField(
                         controller: mobileNumberController,
-                        readOnly: otpField,
+                        readOnly: _authState == AuthState.otpSent ||
+                            _authState == AuthState.verifyingOTP ||
+                            _authState == AuthState.authenticated,
                         maxLength: 10,
                         decoration: InputDecoration(
                           counterText: '',
@@ -217,21 +331,27 @@ class _AuthPageState extends State<AuthPage> {
                         ),
                         style: const TextStyle(color: ColorConst.textColor),
                         keyboardType: TextInputType.number,
-                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly
                         ],
                         validator: (value) {
-                          if (value == null ||
-                              value.isEmpty ||
-                              value.length < 10) {
+                          if (value == null || value.isEmpty) {
                             return 'Please enter your Mobile number';
+                          }
+                          if (value.length != 10) {
+                            return 'Mobile number must be 10 digits';
                           }
                           return null;
                         },
                       ),
                       SizedBox(height: h * 0.02),
-                      if (otpField) ...[
+
+                      // OTP Field (visible only when OTP is sent)
+                      if (_authState == AuthState.otpSent ||
+                          _authState == AuthState.verifyingOTP ||
+                          _authState == AuthState.error &&
+                              _verificationId.isNotEmpty) ...[
                         FractionallySizedBox(
                             child: Pinput(
                           defaultPinTheme: PinTheme(
@@ -252,43 +372,96 @@ class _AuthPageState extends State<AuthPage> {
                           controller: otpController,
                           length: 6,
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          onCompleted: (otp) {
+                            // Auto-verify when OTP is completely entered
+                            verifyOTP(otp);
+                          },
                         )),
-                        SizedBox(height: h * 0.05),
+
+                        // Resend OTP button
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: h * 0.02),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Didn't receive OTP? ",
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7)),
+                              ),
+                              _canResendOTP
+                                  ? TextButton(
+                                      onPressed: () {
+                                        verifyPhoneNumber(
+                                            '+91${mobileNumberController.text.trim()}');
+                                      },
+                                      child: const Text(
+                                        "Resend",
+                                        style: TextStyle(
+                                          color: ColorConst.primaryColor,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      "Resend in $_resendCountdown sec",
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                            ],
+                          ),
+                        ),
                       ],
+
+                      // Error message
+                      if (_errorMessage.isNotEmpty) ...[
+                        Padding(
+                          padding: EdgeInsets.only(bottom: h * 0.02),
+                          child: Text(
+                            _errorMessage,
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: w * 0.035,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
+
                       // Submit Button
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              if (otpField) {
-                                verifyOTP(otpController.text.trim());
-                              } else {
-                                verifyPhoneNumber(
-                                    '+91${mobileNumberController.text.trim()}');
-                              }
-                            }
-                          },
+                          onPressed: _authState == AuthState.sendingOTP ||
+                                  _authState == AuthState.verifyingOTP ||
+                                  _authState == AuthState.authenticated
+                              ? null
+                              : () {
+                                  if (_formKey.currentState!.validate()) {
+                                    if (_authState == AuthState.otpSent) {
+                                      verifyOTP(otpController.text.trim());
+                                    } else {
+                                      verifyPhoneNumber(
+                                          '+91${mobileNumberController.text.trim()}');
+                                    }
+                                  }
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: ColorConst.primaryColor,
                             foregroundColor: ColorConst.backgroundColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            disabledForegroundColor:
+                                Colors.white.withOpacity(0.5),
+                            disabledBackgroundColor:
+                                ColorConst.primaryColor.withOpacity(0.5),
                           ),
-                          child: isLoading
-                              ? const CupertinoActivityIndicator()
-                              : Text(
-                                  otpField ? 'VERIFY' : 'LOGIN',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                          child: _getButtonChild(),
                         ),
                       ),
-                      SizedBox(height: h * 0.01),
                     ],
                   ),
                 ),
@@ -298,5 +471,53 @@ class _AuthPageState extends State<AuthPage> {
         ),
       ),
     );
+  }
+
+  Widget _getButtonChild() {
+    switch (_authState) {
+      case AuthState.sendingOTP:
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CupertinoActivityIndicator(),
+            SizedBox(width: 10),
+            Text("Sending OTP..."),
+          ],
+        );
+      case AuthState.verifyingOTP:
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CupertinoActivityIndicator(),
+            SizedBox(width: 10),
+            Text("Verifying..."),
+          ],
+        );
+      case AuthState.authenticated:
+        return const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CupertinoActivityIndicator(),
+            SizedBox(width: 10),
+            Text("Signing in..."),
+          ],
+        );
+      case AuthState.otpSent:
+        return const Text(
+          'VERIFY',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      default:
+        return const Text(
+          'SEND OTP',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+    }
   }
 }

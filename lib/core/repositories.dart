@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/driver_model.dart';
+import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 final firestoreProvider = Provider((ref) => FirebaseFirestore.instance);
@@ -39,9 +40,9 @@ class Repositories {
             .toList());
   }
 
-  Stream<List<DriverModel>> driverStream() {
+  Stream<List<UserModel>> driverStream() {
     return _drivers.snapshots().map((event) => event.docs
-        .map((e) => DriverModel.fromJson(e.data() as Map<String, dynamic>))
+        .map((e) => UserModel.fromJson(e.data() as Map<String, dynamic>))
         .toList());
   }
 }

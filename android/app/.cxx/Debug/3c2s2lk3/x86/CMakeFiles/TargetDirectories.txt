@@ -1,0 +1,2 @@
+C:/Users/fazil/StudioProjects/zero/android/app/.cxx/Debug/3c2s2lk3/x86/CMakeFiles/edit_cache.dir
+C:/Users/fazil/StudioProjects/zero/android/app/.cxx/Debug/3c2s2lk3/x86/CMakeFiles/rebuild_cache.dir

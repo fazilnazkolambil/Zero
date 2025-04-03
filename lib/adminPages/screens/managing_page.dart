@@ -26,14 +26,13 @@ class _ManagingPageState extends State<ManagingPage>
   bool isLoading = false;
   // List<DriverModel> drivers = [];
   // List<VehicleModel> vehicles = [];
-  Stream<List<DriverModel>> getDrivers() {
+  Stream<List<UserModel>> getUsers() {
     return FirebaseFirestore.instance
-        .collection('organisations')
-        .doc(currentUser!.organisationId)
-        .collection('drivers')
+        .collection('users')
+        .where('organisation_id', isEqualTo: currentUser!.organisationId)
         .snapshots()
         .map((event) =>
-            event.docs.map((e) => DriverModel.fromJson(e.data())).toList());
+            event.docs.map((e) => UserModel.fromJson(e.data())).toList());
   }
 
   Stream<List<VehicleModel>> getVehicles() {
@@ -114,7 +113,7 @@ class _ManagingPageState extends State<ManagingPage>
 
   Widget _buildDriversTab() {
     return StreamBuilder(
-      stream: getDrivers(),
+      stream: getUsers(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(
@@ -123,7 +122,7 @@ class _ManagingPageState extends State<ManagingPage>
             ),
           );
         }
-        List<DriverModel> drivers = snapshot.data!;
+        List<UserModel> drivers = snapshot.data!;
         return drivers.isEmpty
             ? _buildEmptyState('No drivers added yet', Icons.person_outline)
             : ListView.builder(
@@ -147,7 +146,7 @@ class _ManagingPageState extends State<ManagingPage>
                               fontSize: w * 0.04),
                         ),
                         title: Text(
-                          'Driver name : ${drivers[index].driverName}',
+                          'Driver name : ${drivers[index].userName}',
                           style:
                               const TextStyle(color: ColorConst.primaryColor),
                         ),
@@ -159,7 +158,7 @@ class _ManagingPageState extends State<ManagingPage>
                             //   style: const TextStyle(color: ColorConst.primaryColor),
                             // ),
                             Text(
-                              'Remaining trips : ${(drivers[index].targetTrips) - (drivers[index].totalTrips)}',
+                              'Remaining trips : ${(drivers[index].targetTrips!) - (drivers[index].totalTrips!)}',
                               style: const TextStyle(
                                   color: ColorConst.primaryColor),
                             ),
@@ -265,14 +264,9 @@ class _ManagingPageState extends State<ManagingPage>
                                                           .text.isNotEmpty) {
                                                         await FirebaseFirestore
                                                             .instance
-                                                            .collection(
-                                                                'organisations')
-                                                            .doc(currentUser!
-                                                                .organisationId)
-                                                            .collection(
-                                                                'drivers')
+                                                            .collection('users')
                                                             .doc(drivers[index]
-                                                                .driverId)
+                                                                .userId)
                                                             .update({
                                                           'is_blocked': drivers[
                                                                           index]
@@ -350,13 +344,9 @@ class _ManagingPageState extends State<ManagingPage>
                                                     onPressed: () async {
                                                       await FirebaseFirestore
                                                           .instance
-                                                          .collection(
-                                                              'organisations')
-                                                          .doc(currentUser!
-                                                              .organisationId)
-                                                          .collection('drivers')
+                                                          .collection('users')
                                                           .doc(drivers[index]
-                                                              .driverId)
+                                                              .userId)
                                                           .update({
                                                         'is_deleted':
                                                             drivers[index]
@@ -565,10 +555,10 @@ class _ManagingPageState extends State<ManagingPage>
     );
   }
 
-  void _showDriverForm({DriverModel? driver}) {
+  void _showDriverForm({UserModel? driver}) {
     final isEditing = driver != null;
     final nameController =
-        TextEditingController(text: isEditing ? driver.driverName : '');
+        TextEditingController(text: isEditing ? driver.userName : '');
     final phoneController = TextEditingController(
         text: isEditing ? driver.mobileNumber.substring(3) : '');
     final walletController =
@@ -755,20 +745,9 @@ class _ManagingPageState extends State<ManagingPage>
                                     if (isEditing) {
                                       await FirebaseFirestore.instance
                                           .collection('users')
-                                          .doc(driver.driverId)
+                                          .doc(driver.userId)
                                           .update({
                                         'user_name': nameController.text.trim(),
-                                        'mobile_number':
-                                            '+91${phoneController.text}',
-                                      });
-                                      await FirebaseFirestore.instance
-                                          .collection('organisations')
-                                          .doc(currentUser!.organisationId)
-                                          .collection('drivers')
-                                          .doc(driver.driverId)
-                                          .update({
-                                        'driver_name':
-                                            nameController.text.trim(),
                                         'mobile_number':
                                             '+91${phoneController.text}',
                                         'wallet':
@@ -791,10 +770,43 @@ class _ManagingPageState extends State<ManagingPage>
                                           element['mobile_number'] ==
                                           '+91${phoneController.text}');
                                       if (data.isNotEmpty) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(const SnackBar(
-                                                content: Text(
-                                                    'Mobile number already exist!')));
+                                        print('MOBILE NUMBER ALREADY EXIST');
+                                        if (data
+                                            .first['organisation_id'].isEmpty) {
+                                          print('ORGANISATION ID IS EMPTY');
+                                          await FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(data.first['user_id'])
+                                              .update({
+                                            'organisation_id':
+                                                currentUser!.organisationId,
+                                            'user_role': 'Driver',
+                                            'user_name':
+                                                nameController.text.trim(),
+                                            'status': 'ACTIVE',
+                                            'target_trips': int.parse(
+                                                targetTripsController.text),
+                                          });
+                                          await FirebaseFirestore.instance
+                                              .collection('organisations')
+                                              .doc(currentUser!.organisationId)
+                                              .collection('drivers')
+                                              .doc(data.first['user_id'])
+                                              .set({
+                                            'organisation_id':
+                                                currentUser!.organisationId,
+                                            'user_id': data.first['user_id'],
+                                          });
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                                  content: Text(
+                                                      'Driver registered successfully!')));
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                                  content: Text(
+                                                      'User is already working in other Organisation!')));
+                                        }
                                         setState(() {
                                           isLoading = false;
                                         });
@@ -808,6 +820,9 @@ class _ManagingPageState extends State<ManagingPage>
                                                         '+91${phoneController.text}',
                                                     organisationId: currentUser!
                                                         .organisationId,
+                                                    organisationName:
+                                                        currentUser!
+                                                            .organisationName,
                                                     userCreatedOn:
                                                         DateTime.now()
                                                             .toString(),
@@ -815,43 +830,32 @@ class _ManagingPageState extends State<ManagingPage>
                                                     userRole: 'Driver',
                                                     userName: nameController
                                                         .text
-                                                        .trim())
+                                                        .trim(),
+                                                    isBlocked: '',
+                                                    isDeleted: false,
+                                                    status: 'ACTIVE',
+                                                    cashCollected: 0,
+                                                    onRent: '',
+                                                    refund: 0,
+                                                    targetTrips: int.parse(
+                                                        targetTripsController
+                                                            .text),
+                                                    totalEarnings: 0,
+                                                    totalShifts: 0,
+                                                    totalTrips: 0,
+                                                    vehicleRent: 0,
+                                                    wallet: 0)
                                                 .toJson());
                                         await FirebaseFirestore.instance
                                             .collection('organisations')
                                             .doc(currentUser!.organisationId)
                                             .collection('drivers')
                                             .doc(userId)
-                                            .set(DriverModel(
-                                                    organisationId: currentUser!
-                                                        .organisationId,
-                                                    isBlocked: '',
-                                                    driverId: userId,
-                                                    isDeleted: false,
-                                                    totalTrips: 0,
-                                                    totalEarnings: 0,
-                                                    cashCollected: 0,
-                                                    refund: 0,
-                                                    wallet: walletController
-                                                            .text.isEmpty
-                                                        ? 0
-                                                        : double.parse(
-                                                            walletController
-                                                                .text),
-                                                    onRent: '',
-                                                    driverName:
-                                                        nameController
-                                                            .text
-                                                            .trim(),
-                                                    mobileNumber:
-                                                        '+91${phoneController.text}',
-                                                    targetTrips: int.parse(
-                                                        targetTripsController
-                                                            .text),
-                                                    status: 'active',
-                                                    totalShifts: 0,
-                                                    vehicleRent: 0)
-                                                .toJson());
+                                            .set({
+                                          'organisation_id':
+                                              currentUser!.organisationId,
+                                          'user_id': userId,
+                                        });
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
                                                 content: Text(

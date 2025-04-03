@@ -263,7 +263,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Column(
             children: [
               Text(
-                totaltoPay.toString(),
+                totaltoPay.toStringAsFixed(2),
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
