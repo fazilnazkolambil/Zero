@@ -1,9 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:zero/adminPages/screens/_admin_dashboard.dart';
 import 'package:zero/adminPages/screens/admin_dashboard.dart';
 import 'package:zero/adminPages/screens/managing_page.dart';
 import 'package:zero/adminPages/screens/organisation_page.dart';
+import 'package:zero/adminPages/screens/vehicles_page.dart';
 import 'package:zero/core/const_page.dart';
+import 'package:zero/driverPages/driver_bottom_page.dart';
 
 final ScrollController scrollController = ScrollController();
 
@@ -26,9 +29,10 @@ class _MyHomePageState extends State<AdminBottomBar> {
   Widget build(BuildContext context) {
     final List<Widget> bottomBarPages = [
       const AdminDashboard(),
+      const VehiclesPage(),
       const ManagingPage(),
-      const ManagingPage(),
-      const OrganisationPage()
+      // const OrganisationPage()
+      DriverBottomBar()
     ];
     return Scaffold(
       body: bottomBarPages[selectedIndex],

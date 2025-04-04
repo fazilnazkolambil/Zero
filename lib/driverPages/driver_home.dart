@@ -531,7 +531,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                       backgroundColor: ColorConst.boxColor,
                                       title: const Text('Cancel shift?',
                                           style: TextStyle(
-                                              color: ColorConst.primaryColor)),
+                                              color: ColorConst.textColor)),
                                       content: TextField(
                                         controller: reasonController,
                                         style: const TextStyle(
@@ -552,6 +552,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                       actions: [
                                         TextButton(
                                             style: const ButtonStyle(
+                                              side: WidgetStatePropertyAll(
+                                                  BorderSide(
+                                                      color: ColorConst
+                                                          .primaryColor)),
                                               foregroundColor:
                                                   WidgetStatePropertyAll(
                                                       ColorConst.primaryColor),
@@ -693,11 +697,15 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                     content: const Text(
                                       'Are you sure you want to end this shift now?',
                                       style: TextStyle(
-                                          color: ColorConst.primaryColor),
+                                          color: ColorConst.textColor),
                                     ),
                                     actions: [
                                       TextButton(
                                           style: const ButtonStyle(
+                                            side: WidgetStatePropertyAll(
+                                                BorderSide(
+                                                    color: ColorConst
+                                                        .primaryColor)),
                                             foregroundColor:
                                                 WidgetStatePropertyAll(
                                                     ColorConst.primaryColor),

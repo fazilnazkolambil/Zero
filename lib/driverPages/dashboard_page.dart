@@ -33,6 +33,7 @@ class _DashboardPageState extends State<DashboardPage> {
         .doc(currentUser!.organisationId)
         .collection('rents')
         .where('rent_status', isEqualTo: 'completed')
+        .where('driver_id', isEqualTo: currentUser!.userId)
         .where('start_time',
             isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart))
         .where('start_time', isLessThan: Timestamp.fromDate(weekEnd!))
@@ -128,34 +129,35 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: ColorConst.backgroundColor,
       surfaceTintColor: ColorConst.backgroundColor,
       pinned: true,
-      leadingWidth: w,
-      leading: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios,
-              size: 18,
-              color: ColorConst.textColor,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios,
+                size: 18,
+                color: ColorConst.textColor,
+              ),
+              onPressed: previousWeek,
             ),
-            onPressed: previousWeek,
-          ),
-          Text(
-            getWeekRange(),
-            style: const TextStyle(
-              color: ColorConst.textColor,
-              // fontSize: 16,
-              fontWeight: FontWeight.bold,
+            Text(
+              getWeekRange(),
+              style: const TextStyle(
+                color: ColorConst.textColor,
+                // fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward_ios, size: 18),
-            onPressed: nextWeek,
-            color: DateTime.now().difference(weekStart).inDays < 7
-                ? Colors.grey
-                : ColorConst.textColor,
-          ),
-        ],
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios, size: 18),
+              onPressed: nextWeek,
+              color: DateTime.now().difference(weekStart).inDays < 7
+                  ? Colors.grey
+                  : ColorConst.textColor,
+            ),
+          ],
+        ),
       ),
     );
   }

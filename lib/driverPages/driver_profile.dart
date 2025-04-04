@@ -8,7 +8,7 @@ import 'package:zero/adminPages/screens/admin_bottom_page.dart';
 import 'package:zero/auth/auth_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/adminPages/screens/admin_dashboard.dart';
+import 'package:zero/adminPages/screens/_admin_dashboard.dart';
 import 'package:zero/welcome_page.dart';
 
 class DriverProfilePage extends StatelessWidget {
