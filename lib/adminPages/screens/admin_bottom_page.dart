@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:zero/adminPages/screens/_admin_dashboard.dart';
 import 'package:zero/adminPages/screens/admin_dashboard.dart';
+import 'package:zero/adminPages/screens/drivers_page.dart';
 import 'package:zero/adminPages/screens/managing_page.dart';
 import 'package:zero/adminPages/screens/organisation_page.dart';
 import 'package:zero/adminPages/screens/vehicles_page.dart';
@@ -30,7 +31,8 @@ class _MyHomePageState extends State<AdminBottomBar> {
     final List<Widget> bottomBarPages = [
       const AdminDashboard(),
       const VehiclesPage(),
-      const ManagingPage(),
+      const DriversPage(),
+      // const ManagingPage(),
       // const OrganisationPage()
       DriverBottomBar()
     ];

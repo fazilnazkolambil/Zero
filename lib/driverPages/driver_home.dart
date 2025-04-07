@@ -505,23 +505,23 @@ class _DriverHomePageState extends State<DriverHomePage> {
                           },
                         ),
                         SizedBox(height: h * 0.03),
-                        ElevatedButton(
-                            style: ButtonStyle(
-                              side: const WidgetStatePropertyAll(
-                                  BorderSide(color: ColorConst.primaryColor)),
-                              backgroundColor: const WidgetStatePropertyAll(
-                                  ColorConst.boxColor),
-                              fixedSize:
-                                  WidgetStatePropertyAll(Size(w, h * 0.07)),
-                              foregroundColor: const WidgetStatePropertyAll(
-                                  ColorConst.primaryColor),
-                            ),
-                            onPressed: () async {
-                              if (Timestamp.now()
-                                      .toDate()
-                                      .difference(rentModel!.startTime.toDate())
-                                      .inHours <
-                                  2) {
+                        if (Timestamp.now()
+                                .toDate()
+                                .difference(rentModel!.startTime.toDate())
+                                .inHours <
+                            2)
+                          ElevatedButton(
+                              style: ButtonStyle(
+                                side: const WidgetStatePropertyAll(
+                                    BorderSide(color: ColorConst.primaryColor)),
+                                backgroundColor: const WidgetStatePropertyAll(
+                                    ColorConst.boxColor),
+                                fixedSize:
+                                    WidgetStatePropertyAll(Size(w, h * 0.07)),
+                                foregroundColor: const WidgetStatePropertyAll(
+                                    ColorConst.primaryColor),
+                              ),
+                              onPressed: () async {
                                 if (formkey.currentState!.validate()) {
                                   TextEditingController reasonController =
                                       TextEditingController();
@@ -667,14 +667,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                           content: Text(
                                               'Fill the required fields!')));
                                 }
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Cannot cancel the shift anymore. Please end the shift!')));
-                              }
-                            },
-                            child: const Text("Cancel shift")),
+                              },
+                              child: const Text("Cancel shift")),
                         SizedBox(height: h * 0.02),
                         ElevatedButton(
                             style: ButtonStyle(

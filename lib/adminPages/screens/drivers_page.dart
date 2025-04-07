@@ -3,41 +3,45 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class VehiclesPage extends StatefulWidget {
-  const VehiclesPage({super.key});
+class DriversPage extends StatefulWidget {
+  const DriversPage({super.key});
 
   @override
-  State<VehiclesPage> createState() => _VehiclesPageState();
+  State<DriversPage> createState() => _DriversPageState();
 }
 
-class _VehiclesPageState extends State<VehiclesPage> {
+class _DriversPageState extends State<DriversPage> {
   bool isLoading = false;
-  bool isVehicleLoading = false;
-  List<VehicleModel> vehicleModels = [];
-  Future getVehicles() async {
-    vehicleModels.clear();
+  bool isDriversLoading = false;
+  List<UserModel> driverModels = [];
+  Future getDrivers() async {
+    driverModels.clear();
     setState(() {
-      isVehicleLoading = true;
+      isDriversLoading = true;
     });
-    var vehicles = await FirebaseFirestore.instance
-        .collection('organisations')
-        .doc(currentUser!.organisationId)
-        .collection('vehicles')
+    var drivers = await FirebaseFirestore.instance
+        // .collection('organisations')
+        // .doc(currentUser!.organisationId)
+        // .collection('drivers')
+        .collection('users')
+        .where('organisation_id', isEqualTo: currentUser!.organisationId)
+        .where('user_role', isEqualTo: 'Driver')
         .get();
-    for (var vehicle in vehicles.docs) {
-      vehicleModels.add(VehicleModel.fromJson(vehicle.data()));
+    for (var driver in drivers.docs) {
+      driverModels.add(UserModel.fromJson(driver.data()));
     }
     setState(() {
-      isVehicleLoading = false;
+      isDriversLoading = false;
     });
   }
 
   @override
   void initState() {
-    getVehicles();
+    getDrivers();
     super.initState();
   }
 
@@ -46,10 +50,10 @@ class _VehiclesPageState extends State<VehiclesPage> {
     return Scaffold(
         body: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) =>
-                [appbar(), vehicleStats()],
+                [appbar(), driverStats()],
             body: SingleChildScrollView(
               child: Column(
-                children: [_buildVehiclesTab()],
+                children: [_buildDriverTab()],
               ),
             )));
   }
@@ -57,7 +61,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
   Widget appbar() {
     return SliverAppBar(
       toolbarHeight: h * 0.1,
-      title: const Text('Vehicle details',
+      title: const Text('Drivers',
           style: TextStyle(
               color: ColorConst.textColor, fontWeight: FontWeight.bold)),
       backgroundColor: ColorConst.boxColor,
@@ -65,9 +69,10 @@ class _VehiclesPageState extends State<VehiclesPage> {
     );
   }
 
-  Widget vehicleStats() {
-    int inUseVehicles = vehicleModels.where((element) => element.onDuty).length;
-    int availableVehicles = vehicleModels.length - inUseVehicles;
+  Widget driverStats() {
+    int onDutyDrivers =
+        driverModels.where((element) => element.onRent!.isNotEmpty).length;
+    int availableDrivers = driverModels.length - onDutyDrivers;
     return SliverAppBar(
       backgroundColor: ColorConst.backgroundColor,
       surfaceTintColor: ColorConst.backgroundColor,
@@ -80,7 +85,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
             color: ColorConst.boxColor,
             margin:
                 EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
-            child: isVehicleLoading
+            child: isDriversLoading
                 ? const Center(
                     child: CupertinoActivityIndicator(
                     color: ColorConst.primaryColor,
@@ -92,7 +97,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            vehicleModels.length.toString(),
+                            driverModels.length.toString(),
                             style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -100,7 +105,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                           ),
                           SizedBox(height: w * 0.03),
                           const Text(
-                            'Vehicles',
+                            'Total drivers',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
@@ -112,7 +117,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            inUseVehicles.toString(),
+                            onDutyDrivers.toString(),
                             style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -120,7 +125,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                           ),
                           SizedBox(height: w * 0.03),
                           const Text(
-                            'In use',
+                            'On duty',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey,
@@ -132,7 +137,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            availableVehicles.toString(),
+                            availableDrivers.toString(),
                             style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -151,13 +156,13 @@ class _VehiclesPageState extends State<VehiclesPage> {
                       Column(
                         children: [
                           IconButton(
-                              onPressed: () => _showVehicleForm(),
+                              onPressed: () => _showDriverForm(),
                               icon: const Icon(
                                 Icons.add,
                                 color: ColorConst.textColor,
                               )),
                           const Text(
-                            'Add vehicle',
+                            'Add Driver',
                             style: TextStyle(color: ColorConst.textColor),
                           )
                         ],
@@ -170,22 +175,22 @@ class _VehiclesPageState extends State<VehiclesPage> {
     );
   }
 
-  Widget _buildVehiclesTab() {
-    List<VehicleModel> vehicles = vehicleModels;
-    return isVehicleLoading
+  Widget _buildDriverTab() {
+    List<UserModel> drivers = driverModels;
+    return isDriversLoading
         ? const SizedBox()
-        : vehicleModels.isEmpty
+        : driverModels.isEmpty
             ? _buildEmptyState(
-                'No vehicles added yet', Icons.directions_car_rounded)
+                'No Drivers added yet', Icons.directions_car_outlined)
             : ListView.builder(
                 padding: const EdgeInsets.only(top: 0),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: vehicles.length,
+                itemCount: drivers.length,
                 itemBuilder: (context, index) {
-                  final tripCompletion = vehicles[index].totalTrips /
-                      (vehicles[index].targetTrips > 0
-                          ? vehicles[index].targetTrips
+                  final tripCompletion = drivers[index].totalTrips! /
+                      (drivers[index].targetTrips! > 0
+                          ? drivers[index].targetTrips!
                           : 1);
                   return Card(
                     color: ColorConst.boxColor,
@@ -196,14 +201,16 @@ class _VehiclesPageState extends State<VehiclesPage> {
                           children: [
                             Icon(Icons.circle,
                                 size: w * 0.04,
-                                color: vehicles[index].onDuty
+                                color: drivers[index].onRent!.isNotEmpty
                                     ? ColorConst.successColor
                                     : ColorConst.errorColor),
                             SizedBox(
                               height: h * 0.01,
                             ),
                             Text(
-                              vehicles[index].onDuty ? 'on duty' : 'Idle',
+                              drivers[index].onRent!.isNotEmpty
+                                  ? 'on duty'
+                                  : 'Idle',
                               style: TextStyle(
                                   color: ColorConst.textColor,
                                   fontSize: w * 0.04),
@@ -211,7 +218,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                           ],
                         ),
                         title: Text(
-                          vehicles[index].vehicleNumber,
+                          drivers[index].userName,
                           style: const TextStyle(
                               color: ColorConst.textColor,
                               fontWeight: FontWeight.bold),
@@ -238,7 +245,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: Text(
-                                  '${vehicles[index].totalTrips.toString()} / ${vehicles[index].targetTrips.toString()} trips',
+                                  '${drivers[index].totalTrips.toString()} / ${drivers[index].targetTrips.toString()} trips',
                                   style: const TextStyle(
                                     color: Colors.grey,
                                     fontSize: 12,
@@ -257,8 +264,8 @@ class _VehiclesPageState extends State<VehiclesPage> {
                           itemBuilder: (context) {
                             return [
                               PopupMenuItem(
-                                  onTap: () => _showVehicleForm(
-                                      vehicle: vehicles[index]),
+                                  onTap: () =>
+                                      _showDriverForm(driver: drivers[index]),
                                   child: const Text(
                                     'Edit',
                                     style: TextStyle(
@@ -272,20 +279,16 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                         builder: (context) => AlertDialog(
                                               backgroundColor:
                                                   ColorConst.boxColor,
-                                              title: Text(
-                                                  vehicles[index].isDeleted
-                                                      ? 'Recover driver?'
-                                                      : 'Delete driver?',
-                                                  style: const TextStyle(
+                                              title: const Text(
+                                                  'Remove driver?',
+                                                  style: TextStyle(
                                                       color: ColorConst
-                                                          .primaryColor)),
-                                              content: Text(
-                                                vehicles[index].isDeleted
-                                                    ? 'Are you sure you want to recover this driver?'
-                                                    : 'Are you sure you want to delete this driver?',
-                                                style: const TextStyle(
-                                                    color: ColorConst
-                                                        .primaryColor),
+                                                          .textColor)),
+                                              content: const Text(
+                                                'Are you sure you want to remove this driver?',
+                                                style: TextStyle(
+                                                    color:
+                                                        ColorConst.textColor),
                                               ),
                                               actions: [
                                                 TextButton(
@@ -312,19 +315,24 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                                     onPressed: () async {
                                                       await FirebaseFirestore
                                                           .instance
+                                                          .collection('users')
+                                                          .doc(drivers[index]
+                                                              .userId)
+                                                          .update({
+                                                        'organisation_id': '',
+                                                        'organisation_name': ''
+                                                      });
+                                                      await FirebaseFirestore
+                                                          .instance
                                                           .collection(
                                                               'organisations')
                                                           .doc(currentUser!
                                                               .organisationId)
                                                           .collection('drivers')
-                                                          .doc(vehicles[index]
-                                                              .vehicleId)
+                                                          .doc(drivers[index]
+                                                              .userId)
                                                           .update({
-                                                        'is_deleted':
-                                                            vehicles[index]
-                                                                    .isDeleted
-                                                                ? false
-                                                                : true
+                                                        'is_removed': true
                                                       });
                                                       Navigator.pop(context);
                                                     },
@@ -332,11 +340,8 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                               ],
                                             ));
                                   },
-                                  child: Text(
-                                      vehicles[index].isDeleted
-                                          ? 'Recover'
-                                          : 'Delete',
-                                      style: const TextStyle(
+                                  child: const Text('Remove',
+                                      style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           color: ColorConst.textColor))),
                             ];
@@ -347,37 +352,36 @@ class _VehiclesPageState extends State<VehiclesPage> {
   }
 
   Widget _buildEmptyState(String message, IconData icon) {
-    return SizedBox(
-      height: h * 0.5,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: const TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Tap the + button to add new',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 80, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: const TextStyle(fontSize: 18, color: Colors.grey),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Tap the + button to add new',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ],
       ),
     );
   }
 
-  void _showVehicleForm({VehicleModel? vehicle}) {
-    final isEditing = vehicle != null;
-    final plateController =
-        TextEditingController(text: isEditing ? vehicle.vehicleNumber : '');
-    final rentController =
-        TextEditingController(text: isEditing ? vehicle.rent.toString() : '');
-    final targetTrips = TextEditingController(
-        text: isEditing ? vehicle.targetTrips.toString() : '');
+  void _showDriverForm({UserModel? driver}) {
+    final isEditing = driver != null;
+    final nameController =
+        TextEditingController(text: isEditing ? driver.userName : '');
+    final phoneController = TextEditingController(
+        text: isEditing ? driver.mobileNumber.substring(3) : '');
+    final walletController =
+        TextEditingController(text: isEditing ? driver.wallet.toString() : '');
+    final targetTripsController = TextEditingController(
+        text: isEditing ? driver.targetTrips.toString() : '');
     final formkey = GlobalKey<FormState>();
     showModalBottomSheet(
       context: context,
@@ -401,22 +405,21 @@ class _VehiclesPageState extends State<VehiclesPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isEditing ? 'Edit Vehicle' : 'Add New Vehicle',
+                      isEditing ? 'Edit Driver' : 'Add New Driver',
                       style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: ColorConst.textColor),
                     ),
-                    SizedBox(height: h * 0.05),
+                    const SizedBox(height: 16),
                     TextFormField(
-                      controller: plateController,
+                      controller: nameController,
                       decoration: InputDecoration(
-                        labelText: 'Number plate',
-                        labelStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'Name',
                         prefixIcon: Padding(
                           padding: EdgeInsets.all(w * 0.05),
                           child: const Icon(
-                            Icons.time_to_leave_outlined,
+                            Icons.person_2_outlined,
                             color: ColorConst.primaryColor,
                           ),
                         ),
@@ -431,107 +434,112 @@ class _VehiclesPageState extends State<VehiclesPage> {
                       ),
                       style: const TextStyle(color: ColorConst.textColor),
                       keyboardType: TextInputType.name,
-                      textCapitalization: TextCapitalization.characters,
+                      textCapitalization: TextCapitalization.words,
                       autovalidateMode: AutovalidateMode.onUnfocus,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return "Please enter vehicle's number plate";
+                          return "Please enter driver's name";
                         }
                         return null;
                       },
                     ),
-                    SizedBox(height: h * 0.02),
+                    const SizedBox(height: 12),
                     TextFormField(
-                      controller: rentController,
+                      controller: phoneController,
+                      maxLength: 10,
                       decoration: InputDecoration(
-                        labelText: 'Rent amount',
-                        labelStyle: const TextStyle(color: Colors.grey),
+                        counterText: '',
+                        hintText: 'Mobile number',
                         prefixIcon: Padding(
                           padding: EdgeInsets.all(w * 0.05),
-                          child: Text(
-                            '₹',
-                            style: TextStyle(
-                                color: ColorConst.primaryColor,
-                                fontSize: w * 0.06),
+                          child: const Text('+91',
+                              style: TextStyle(color: ColorConst.primaryColor)),
+                        ),
+                        border: const OutlineInputBorder(),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: ColorConst.primaryColor),
+                        ),
+                        filled: true,
+                        fillColor: ColorConst.boxColor,
+                        hintStyle: const TextStyle(color: Colors.grey),
+                      ),
+                      style: const TextStyle(color: ColorConst.textColor),
+                      keyboardType: TextInputType.number,
+                      autovalidateMode: AutovalidateMode.onUnfocus,
+                      validator: (value) {
+                        if (value == null ||
+                            value.isEmpty ||
+                            value.length < 10) {
+                          return "Please enter driver's Mobile number";
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: walletController,
+                      decoration: InputDecoration(
+                        hintText: 'Advance amount',
+                        prefixIcon: Padding(
+                          padding: EdgeInsets.all(w * 0.05),
+                          child: const Text('₹',
+                              style: TextStyle(color: ColorConst.primaryColor)),
+                        ),
+                        border: const OutlineInputBorder(),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: ColorConst.primaryColor),
+                        ),
+                        filled: true,
+                        fillColor: ColorConst.boxColor,
+                        hintStyle: const TextStyle(color: Colors.grey),
+                      ),
+                      style: const TextStyle(color: ColorConst.textColor),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: targetTripsController,
+                      decoration: InputDecoration(
+                        hintText: 'Target trips',
+                        prefixIcon: Padding(
+                            padding: EdgeInsets.all(w * 0.05),
+                            child: const Icon(
+                              Icons.trending_up_rounded,
+                              color: ColorConst.primaryColor,
+                            )),
+                        border: const OutlineInputBorder(),
+                        focusedBorder: const OutlineInputBorder(
+                          borderSide:
+                              BorderSide(color: ColorConst.primaryColor),
+                        ),
+                        filled: true,
+                        fillColor: ColorConst.boxColor,
+                        hintStyle: const TextStyle(color: Colors.grey),
+                      ),
+                      style: const TextStyle(color: ColorConst.textColor),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: ColorConst.primaryColor),
                           ),
                         ),
-                        suffix: const Text('12 hrs'),
-                        border: const OutlineInputBorder(),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: ColorConst.primaryColor),
-                        ),
-                        filled: true,
-                        fillColor: ColorConst.boxColor,
-                        hintStyle: const TextStyle(color: Colors.grey),
-                      ),
-                      style: const TextStyle(color: ColorConst.textColor),
-                      keyboardType: TextInputType.name,
-                      textCapitalization: TextCapitalization.characters,
-                      autovalidateMode: AutovalidateMode.onUnfocus,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter the rent amount";
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: h * 0.02),
-                    TextFormField(
-                      controller: targetTrips,
-                      decoration: InputDecoration(
-                        labelText: 'Target',
-                        labelStyle: const TextStyle(color: Colors.grey),
-                        prefixIcon: Padding(
-                          padding: EdgeInsets.all(w * 0.05),
-                          child: const Icon(Icons.av_timer_sharp,
-                              color: ColorConst.primaryColor),
-                        ),
-                        suffix: const Text('Trips'),
-                        border: const OutlineInputBorder(),
-                        focusedBorder: const OutlineInputBorder(
-                          borderSide:
-                              BorderSide(color: ColorConst.primaryColor),
-                        ),
-                        filled: true,
-                        fillColor: ColorConst.boxColor,
-                        hintStyle: const TextStyle(color: Colors.grey),
-                      ),
-                      style: const TextStyle(color: ColorConst.textColor),
-                      keyboardType: TextInputType.name,
-                      textCapitalization: TextCapitalization.characters,
-                      autovalidateMode: AutovalidateMode.onUnfocus,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter the target trips";
-                        }
-                        return null;
-                      },
-                    ),
-                    SizedBox(height: h * 0.02),
-                    isLoading
-                        ? Padding(
-                            padding: EdgeInsets.only(right: w * 0.15),
-                            child: const Align(
-                              alignment: Alignment.centerRight,
-                              child: CupertinoActivityIndicator(
-                                color: ColorConst.primaryColor,
-                              ),
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text(
-                                  'Cancel',
-                                  style:
-                                      TextStyle(color: ColorConst.primaryColor),
+                        const SizedBox(width: 12),
+                        isLoading
+                            ? const Center(
+                                child: CupertinoActivityIndicator(
+                                  color: ColorConst.primaryColor,
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton(
+                              )
+                            : ElevatedButton(
                                 style: const ButtonStyle(
                                     backgroundColor: WidgetStatePropertyAll(
                                         ColorConst.primaryColor)),
@@ -542,74 +550,135 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                     });
                                     if (isEditing) {
                                       await FirebaseFirestore.instance
-                                          .collection('organisations')
-                                          .doc(currentUser!.organisationId)
-                                          .collection('vehicles')
-                                          .doc(vehicle.vehicleId)
+                                          .collection('users')
+                                          .doc(driver.userId)
                                           .update({
-                                        'vehicle_number':
-                                            plateController.text.trim(),
-                                        'rent':
-                                            double.parse(rentController.text),
-                                        'target_trips':
-                                            int.parse(targetTrips.text)
+                                        'user_name': nameController.text.trim(),
+                                        'mobile_number':
+                                            '+91${phoneController.text}',
+                                        'wallet':
+                                            double.parse(walletController.text),
+                                        'target_trips': int.parse(
+                                            targetTripsController.text)
                                       });
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(const SnackBar(
+                                              content: Text(
+                                                  'Details updated successfully!')));
                                       setState(() {
                                         isLoading = false;
                                       });
-                                      await getVehicles();
+                                      await getDrivers();
                                       Navigator.pop(context);
                                     } else {
-                                      var vehicleCollection =
+                                      var users = await FirebaseFirestore
+                                          .instance
+                                          .collection('users')
+                                          .get();
+                                      var data = users.docs.where((element) =>
+                                          element['mobile_number'] ==
+                                          '+91${phoneController.text}');
+                                      if (data.isNotEmpty) {
+                                        print('MOBILE NUMBER ALREADY EXIST');
+                                        if (data
+                                            .first['organisation_id'].isEmpty) {
+                                          print('ORGANISATION ID IS EMPTY');
+                                          await FirebaseFirestore.instance
+                                              .collection('users')
+                                              .doc(data.first['user_id'])
+                                              .update({
+                                            'organisation_id':
+                                                currentUser!.organisationId,
+                                            'user_role': 'Driver',
+                                            'user_name':
+                                                nameController.text.trim(),
+                                            'status': 'ACTIVE',
+                                            'target_trips': int.parse(
+                                                targetTripsController.text),
+                                            'wallet': double.parse(
+                                                walletController.text)
+                                          });
                                           await FirebaseFirestore.instance
                                               .collection('organisations')
                                               .doc(currentUser!.organisationId)
-                                              .collection('vehicles')
-                                              .get();
-                                      var data = vehicleCollection.docs.where(
-                                          (element) =>
-                                              element['vehicle_number'] ==
-                                              plateController.text);
-                                      if (data.isNotEmpty) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(const SnackBar(
-                                                content: Text(
-                                                    'Vehicle already exist!')));
+                                              .collection('drivers')
+                                              .doc(data.first['user_id'])
+                                              .set({
+                                            'organisation_id':
+                                                currentUser!.organisationId,
+                                            'user_id': data.first['user_id'],
+                                            'joined_on': DateTime.now(),
+                                            'is_removed': false
+                                          });
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                                  content: Text(
+                                                      'Driver registered successfully!')));
+                                          await getDrivers();
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(const SnackBar(
+                                                  content: Text(
+                                                      'User is already working in other Organisation!')));
+                                        }
                                         setState(() {
                                           isLoading = false;
                                         });
                                       } else {
-                                        String vehicleId =
-                                            'vehicle${vehicleCollection.size}';
+                                        String userId = 'zer0user${users.size}';
+                                        await FirebaseFirestore.instance
+                                            .collection('users')
+                                            .doc(userId)
+                                            .set(UserModel(
+                                                    mobileNumber:
+                                                        '+91${phoneController.text}',
+                                                    organisationId: currentUser!
+                                                        .organisationId,
+                                                    organisationName:
+                                                        currentUser!
+                                                            .organisationName,
+                                                    userCreatedOn:
+                                                        DateTime.now()
+                                                            .toString(),
+                                                    userId: userId,
+                                                    userRole: 'Driver',
+                                                    userName: nameController
+                                                        .text
+                                                        .trim(),
+                                                    isBlocked: '',
+                                                    isDeleted: false,
+                                                    status: 'ACTIVE',
+                                                    onRent: '',
+                                                    targetTrips:
+                                                        targetTripsController
+                                                                .text.isEmpty
+                                                            ? 0
+                                                            : int.parse(
+                                                                targetTripsController
+                                                                    .text),
+                                                    totalEarnings: 0,
+                                                    totalShifts: 0,
+                                                    totalTrips: 0,
+                                                    wallet: 0)
+                                                .toJson());
                                         await FirebaseFirestore.instance
                                             .collection('organisations')
                                             .doc(currentUser!.organisationId)
-                                            .collection('vehicles')
-                                            .doc(vehicleId)
-                                            .set(VehicleModel(
-                                                    rent: double.parse(
-                                                        rentController.text),
-                                                    vehicleNumber:
-                                                        plateController.text,
-                                                    driver: '',
-                                                    startTime: Timestamp.now(),
-                                                    lastDriven: Timestamp.now(),
-                                                    onDuty: false,
-                                                    status: 'ACTIVE',
-                                                    vehicleId: vehicleId,
-                                                    isDeleted: false,
-                                                    totalTrips: 0,
-                                                    targetTrips: int.parse(
-                                                        targetTrips.text))
-                                                .toJson());
+                                            .collection('drivers')
+                                            .doc(userId)
+                                            .set({
+                                          'organisation_id':
+                                              currentUser!.organisationId,
+                                          'user_id': userId,
+                                        });
                                         ScaffoldMessenger.of(context)
                                             .showSnackBar(const SnackBar(
                                                 content: Text(
-                                                    'Vehicle added successfully!')));
+                                                    'Driver registered successfully!')));
                                         setState(() {
                                           isLoading = false;
                                         });
-                                        await getVehicles();
+                                        await getDrivers();
                                         Navigator.pop(context);
                                       }
                                     }
@@ -621,13 +690,13 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                   }
                                 },
                                 child: Text(
-                                  isEditing ? 'Update' : 'Add car',
+                                  isEditing ? 'Update' : 'Add Driver',
                                   style: const TextStyle(
                                       color: ColorConst.backgroundColor),
                                 ),
                               ),
-                            ],
-                          ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                   ],
                 ),
