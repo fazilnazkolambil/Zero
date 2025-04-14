@@ -23,26 +23,7 @@ class _MyHomePageState extends State<DriverBottomBar> {
     final List<Widget> bottomBarPages = [
       const DriverHomePage(),
       const DashboardPage(),
-      DriverProfilePage(
-        cashCollected: 1000.00,
-        driverId: 'driver_id',
-        driverName: 'Fazil naz kolambil',
-        isBlocked: 'Not blocked',
-        isDeleted: false,
-        mobileNumber: '+919487022519',
-        onRent: 'rentId1',
-        organisationId: 'organisation_id',
-        organisationName: 'Zero uber',
-        refund: 500.50,
-        status: 'active',
-        targetTrips: 70,
-        totalEarnings: 3500.50,
-        totalShifts: 7,
-        totalTrips: 35,
-        vehicleRent: 500,
-        wallet: -1500.50,
-        createdOn: Timestamp.now(),
-      )
+      const DriverProfilePage()
     ];
     void onItemTapped(int index) {
       setState(() {

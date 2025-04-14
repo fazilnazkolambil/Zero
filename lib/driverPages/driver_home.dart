@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero/auth/auth_page.dart';
@@ -12,7 +13,6 @@ import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/rent_model.dart';
-import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class DriverHomePage extends StatefulWidget {
@@ -24,7 +24,6 @@ class DriverHomePage extends StatefulWidget {
 
 class _DriverHomePageState extends State<DriverHomePage> {
   bool isLoading = true;
-  // DriverModel? currentDriver;
   RentModel? rentModel;
   TextEditingController searchController = TextEditingController();
   String searchkey = '';
@@ -33,30 +32,23 @@ class _DriverHomePageState extends State<DriverHomePage> {
     setState(() {
       isLoading = true;
     });
-    // await FirebaseFirestore.instance
-    //     .collection('organisations')
-    //     .doc(currentUser!.organisationId)
-    //     .collection('drivers')
-    //     .doc(currentUser!.userId)
-    //     .get()
-    //     .then((value) {
-    //   currentDriver =
-    //       DriverModel.fromJson(value.data() as Map<String, dynamic>);
-    // });
     await FirebaseFirestore.instance
-        .collection('users')
+        .collection('organisations')
+        .doc(currentUser!.organisationId)
+        .collection('drivers')
         .doc(currentUser!.userId)
         .get()
         .then((value) {
-      currentUser = UserModel.fromJson(value.data() as Map<String, dynamic>);
+      currentDriver =
+          DriverModel.fromJson(value.data() as Map<String, dynamic>);
     });
-    log(currentUser!.toJson().toString());
-    if (currentUser!.onRent!.isNotEmpty) {
+    log(currentDriver!.toJson().toString());
+    if (currentDriver!.onRent.isNotEmpty) {
       await FirebaseFirestore.instance
           .collection('organisations')
           .doc(currentUser!.organisationId)
           .collection('rents')
-          .doc(currentUser!.onRent)
+          .doc(currentDriver!.onRent)
           .get()
           .then(
         (value) {
@@ -81,7 +73,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
         .doc(currentUser!.organisationId)
         .collection('vehicles')
         .where('on_duty', isEqualTo: false)
-        .where('status', isEqualTo: 'active')
+        .where('status', isEqualTo: 'ACTIVE')
         .where('is_deleted', isEqualTo: false)
         .snapshots()
         .map((event) =>
@@ -99,12 +91,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
             )
           : Scaffold(
               body: NestedScrollView(
-                  physics: currentUser!.onRent!.isNotEmpty
+                  physics: currentDriver!.onRent.isNotEmpty
                       ? const NeverScrollableScrollPhysics()
                       : const ScrollPhysics(),
-                  headerSliverBuilder: (context, innerBoxIsScrolled) =>
-                      [appBar(), if (currentUser!.onRent!.isEmpty) searchBar()],
-                  body: currentUser!.onRent!.isNotEmpty
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                        appBar(),
+                        if (currentDriver!.onRent.isEmpty) searchBar()
+                      ],
+                  body: currentDriver!.onRent.isNotEmpty
                       ? driverOnDuty()
                       : driverOffDuty())),
     );
@@ -114,7 +108,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
     return SliverAppBar(
       foregroundColor: ColorConst.textColor,
       toolbarHeight: h * 0.1,
-      title: Text(currentUser!.onRent!.isNotEmpty
+      title: Text(currentDriver!.onRent.isNotEmpty
           ? 'You are on duty'
           : 'Select vehicle'),
       backgroundColor: ColorConst.boxColor,
@@ -188,7 +182,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                   ? const Expanded(
                       child: Center(
                         child: Text('No vehicles added!',
-                            style: TextStyle(color: ColorConst.primaryColor)),
+                            style: TextStyle(color: ColorConst.textColor)),
                       ),
                     )
                   : Expanded(
@@ -237,21 +231,24 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                               'rentid${getRents.size}';
                                           await FirebaseFirestore.instance
                                               .collection('organisations')
-                                              .doc(currentUser!.organisationId)
+                                              .doc(
+                                                  currentDriver!.organisationId)
                                               .collection('rents')
                                               .doc(rentId)
                                               .set(RentModel(
                                                       rentId: rentId,
-                                                      driverId:
-                                                          currentUser!.userId,
+                                                      driverId: currentDriver!
+                                                          .driverId,
+                                                      driverName: currentDriver!
+                                                          .driverName,
                                                       vehicleId:
                                                           vehicle.vehicleId,
                                                       vehicleNumber:
                                                           vehicle.vehicleNumber,
                                                       startTime:
                                                           Timestamp.now(),
-                                                      rent: vehicle.rent,
-                                                      shift:
+                                                      vehicleRent: vehicle.rent,
+                                                      selectedShift:
                                                           int.parse(shiftValue),
                                                       totalTrips: 0,
                                                       totalEarnings: 0,
@@ -272,14 +269,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                             'selected_shift':
                                                 int.parse(shiftValue)
                                           });
-                                          // await FirebaseFirestore.instance
-                                          //     .collection('organisations')
-                                          //     .doc(currentUser!.organisationId)
-                                          //     .collection('drivers')
-                                          //     .doc(currentUser!.userId)
-                                          //     .update({'on_rent': rentId});
                                           await FirebaseFirestore.instance
-                                              .collection('users')
+                                              .collection('organisations')
+                                              .doc(currentUser!.organisationId)
+                                              .collection('drivers')
                                               .doc(currentUser!.userId)
                                               .update({'on_rent': rentId});
                                           await getDriverDetails();
@@ -398,6 +391,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                           style: const TextStyle(color: ColorConst.textColor),
                           keyboardType: TextInputType.number,
                           autovalidateMode: AutovalidateMode.onUnfocus,
+                          textInputAction: TextInputAction.next,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Enter the Total trips";
@@ -431,6 +425,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                           style: const TextStyle(color: ColorConst.textColor),
                           keyboardType: TextInputType.number,
                           autovalidateMode: AutovalidateMode.onUnfocus,
+                          textInputAction: TextInputAction.next,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Enter the Total earnings";
@@ -464,6 +459,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                           style: const TextStyle(color: ColorConst.textColor),
                           keyboardType: TextInputType.number,
                           autovalidateMode: AutovalidateMode.onUnfocus,
+                          textInputAction: TextInputAction.next,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Enter the refund amount";
@@ -497,6 +493,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                           style: const TextStyle(color: ColorConst.textColor),
                           keyboardType: TextInputType.number,
                           autovalidateMode: AutovalidateMode.onUnfocus,
+                          textInputAction: TextInputAction.done,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return "Enter the Cash collected amount";
@@ -576,10 +573,12 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                             onPressed: () async {
                                               if (reasonController
                                                   .text.isEmpty) {
-                                                ScaffoldMessenger.of(context)
-                                                    .showSnackBar(const SnackBar(
-                                                        content: Text(
-                                                            'Enter the reason')));
+                                                Fluttertoast.showToast(
+                                                  msg: "Enter the reason!",
+                                                  toastLength:
+                                                      Toast.LENGTH_SHORT,
+                                                  gravity: ToastGravity.TOP,
+                                                );
                                               } else {
                                                 await FirebaseFirestore.instance
                                                     .collection('organisations')
@@ -662,10 +661,11 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                     ),
                                   );
                                 } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                          content: Text(
-                                              'Fill the required fields!')));
+                                  Fluttertoast.showToast(
+                                    msg: "Fill the required fields!",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.TOP,
+                                  );
                                 }
                               },
                               child: const Text("Cancel shift")),
@@ -719,12 +719,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                           onPressed: () async {
                                             if (!formkey.currentState!
                                                 .validate()) {
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(const SnackBar(
-                                                      content: Text(
-                                                          'Fill up the required fields')));
+                                              Fluttertoast.showToast(
+                                                msg:
+                                                    "Fill up the required fields!",
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.TOP,
+                                              );
                                             } else {
-                                              double totaltoPay = (double.parse(
+                                              double totaltoPay = -(double.parse(
                                                           totalEarningscontroller
                                                               .text) +
                                                       double.parse(
@@ -733,8 +735,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                       double.parse(
                                                           cashCollectedcontroller
                                                               .text)) +
-                                                  ((rentModel!.shift) *
-                                                      (rentModel!.rent));
+                                                  ((rentModel!.selectedShift) *
+                                                      (rentModel!.vehicleRent));
 
                                               await FirebaseFirestore.instance
                                                   .collection('organisations')
@@ -796,11 +798,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                         refundController.text)),
                                                 'total_shifts':
                                                     FieldValue.increment(
-                                                        rentModel!.shift),
+                                                        rentModel!
+                                                            .selectedShift),
                                                 'vehicle_rent':
                                                     FieldValue.increment(
-                                                        rentModel!.shift *
-                                                            rentModel!.rent),
+                                                        rentModel!
+                                                                .selectedShift *
+                                                            rentModel!
+                                                                .vehicleRent),
                                                 'total_trips':
                                                     FieldValue.increment(
                                                         int.parse(
@@ -809,10 +814,13 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                 'wallet': FieldValue.increment(
                                                     -totaltoPay),
                                               });
-                                              ScaffoldMessenger.of(context)
-                                                  .showSnackBar(const SnackBar(
-                                                      content: Text(
-                                                          'Shift completed successfully!')));
+                                              Fluttertoast.showToast(
+                                                msg:
+                                                    "Shift completed successfully!",
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.TOP,
+                                              );
+
                                               Navigator.pop(context);
                                               await getDriverDetails();
                                             }
@@ -822,10 +830,11 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                   ),
                                 );
                               } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                            Text('Fill the required fields!')));
+                                Fluttertoast.showToast(
+                                  msg: "Fill the required fields!",
+                                  toastLength: Toast.LENGTH_SHORT,
+                                  gravity: ToastGravity.TOP,
+                                );
                               }
                             },
                             child: const Text("End shift"))

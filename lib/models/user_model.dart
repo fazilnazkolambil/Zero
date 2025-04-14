@@ -9,15 +9,11 @@ class UserModel {
   bool isDeleted;
   int? totalTrips;
   double? totalEarnings;
-  // double? cashCollected;
-  // double? refund;
   double? wallet;
-  String? onRent;
   String status;
   String isBlocked;
   int? targetTrips;
   int? totalShifts;
-  // double? vehicleRent;
 
   UserModel({
     required this.mobileNumber,
@@ -30,15 +26,11 @@ class UserModel {
     required this.isDeleted,
     this.totalTrips,
     this.totalEarnings,
-    // this.cashCollected,
-    // this.refund,
     this.wallet,
-    this.onRent,
     required this.status,
     required this.isBlocked,
     this.targetTrips,
     this.totalShifts,
-    // this.vehicleRent,
   });
 
   UserModel copyWith({
@@ -52,8 +44,6 @@ class UserModel {
     bool? isDeleted,
     int? totalTrips,
     double? totalEarnings,
-    // double? cashCollected,
-    // double? refund,
     double? wallet,
     String? onRent,
     String? driverName,
@@ -62,7 +52,6 @@ class UserModel {
     String? isBlocked,
     int? targetTrips,
     int? totalShifts,
-    // double? vehicleRent
   }) =>
       UserModel(
         mobileNumber: mobileNumber ?? this.mobileNumber,
@@ -75,15 +64,11 @@ class UserModel {
         isDeleted: isDeleted ?? this.isDeleted,
         totalTrips: totalTrips ?? this.totalTrips,
         totalEarnings: totalEarnings ?? this.totalEarnings,
-        // cashCollected: cashCollected ?? this.cashCollected,
-        // refund: refund ?? this.refund,
         wallet: wallet ?? this.wallet,
-        onRent: onRent ?? this.onRent,
         status: status ?? this.status,
         isBlocked: isBlocked ?? this.isBlocked,
         targetTrips: targetTrips ?? this.targetTrips,
         totalShifts: totalShifts ?? this.totalShifts,
-        // vehicleRent: vehicleRent ?? this.vehicleRent,
       );
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -97,15 +82,11 @@ class UserModel {
         isDeleted: json["is_deleted"] ?? false,
         totalTrips: json["total_trips"] ?? 0,
         totalEarnings: json["total_earnings"]?.toDouble() ?? 0.0,
-        // cashCollected: json["cash_collected"]?.toDouble() ?? 0.0,
-        // refund: json["refund"]?.toDouble() ?? 0.0,
         wallet: json["wallet"]?.toDouble() ?? 0.0,
-        onRent: json["on_rent"] ?? '',
         status: json["status"] ?? '',
         isBlocked: json["is_blocked"] ?? '',
         targetTrips: json["target_trips"] ?? 0,
         totalShifts: json["total_shifts"] ?? 0,
-        // vehicleRent: json["vehicle_rent"]?.toDouble() ?? 0.0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -119,14 +100,10 @@ class UserModel {
         "is_deleted": isDeleted,
         "total_trips": totalTrips,
         "total_earnings": totalEarnings,
-        // "cash_collected": cashCollected,
-        // "refund": refund,
         "wallet": wallet,
-        "on_rent": onRent,
         "status": status,
         "is_blocked": isBlocked,
         "target_trips": targetTrips,
         "total_shifts": totalShifts,
-        // "vehicle_rent": vehicleRent,
       };
 }

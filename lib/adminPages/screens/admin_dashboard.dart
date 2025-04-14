@@ -6,12 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/rent_model.dart';
-import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final Map<String, dynamic> fleet;
+  const AdminDashboard({super.key, required this.fleet});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -21,9 +22,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   DateTime weekStart =
       DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
   DateTime? weekEnd;
-  bool isRentLoading = false;
-  bool isVehiclesLoading = false;
-  bool isDriversLoading = false;
+  bool isLoading = false;
 
   List<RentModel> rentModels = [];
   Future getRents() async {
@@ -32,7 +31,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         DateTime(weekStart.year, weekStart.month, weekStart.day, 4, 0, 0);
     weekEnd = weekStart.add(const Duration(days: 6, hours: 24));
     setState(() {
-      isRentLoading = true;
+      isLoading = true;
     });
     var rentcollection = await FirebaseFirestore.instance
         .collection('organisations')
@@ -46,14 +45,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
       rentModels.add(RentModel.fromMap(rents.data()));
     }
     setState(() {
-      isRentLoading = false;
+      isLoading = false;
     });
   }
 
   List<VehicleModel> vehicleModels = [];
   Future getVehicles() async {
     setState(() {
-      isVehiclesLoading = true;
+      isLoading = true;
     });
     var vehicles = await FirebaseFirestore.instance
         .collection('organisations')
@@ -64,14 +63,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
       vehicleModels.add(VehicleModel.fromJson(vehicles.data()));
     }
     setState(() {
-      isVehiclesLoading = false;
+      isLoading = false;
     });
   }
 
-  List<UserModel> driverModels = [];
+  List<DriverModel> driverModels = [];
   Future getDrivers() async {
     setState(() {
-      isDriversLoading = true;
+      isLoading = true;
     });
     var drivers = await FirebaseFirestore.instance
         .collection('organisations')
@@ -79,10 +78,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         .collection('drivers')
         .get();
     for (var drivers in drivers.docs) {
-      driverModels.add(UserModel.fromJson(drivers.data()));
+      driverModels.add(DriverModel.fromJson(drivers.data()));
     }
     setState(() {
-      isDriversLoading = false;
+      isLoading = false;
     });
   }
 
@@ -112,6 +111,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   void initState() {
+    // getFleetPlan();
     getRents();
     getVehicles();
     getDrivers();
@@ -120,25 +120,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) =>
-              [appbar(), selectWeek()],
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                Row(
-                  children: [driverStats(), vehicleStats()],
+    return SafeArea(
+      child: Scaffold(
+        body: isLoading
+            ? const Center(
+                child: CupertinoActivityIndicator(
+                  color: ColorConst.primaryColor,
                 ),
-                SizedBox(height: h * 0.01),
-                revenueStats(),
-                SizedBox(height: h * 0.01),
-                revenueChart(),
-                SizedBox(height: h * 0.01),
-                buildRentList(),
-              ],
-            ),
-          )),
+              )
+            : NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) =>
+                    [appbar(), selectWeek()],
+                body: rentModels.isEmpty
+                    ? const Center(
+                        child: Text(
+                        'No rents on this week',
+                        style: TextStyle(color: ColorConst.textColor),
+                      ))
+                    : SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            rentStats(),
+                            SizedBox(height: h * 0.01),
+                            revenueStats(),
+                            SizedBox(height: h * 0.01),
+                            buildRentList(),
+                          ],
+                        ),
+                      )),
+      ),
     );
   }
 
@@ -165,7 +175,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               IconButton(
                 icon: const Icon(
                   Icons.arrow_back_ios,
-                  size: 18,
+                  size: 20,
                   color: ColorConst.textColor,
                 ),
                 onPressed: previousWeek,
@@ -174,12 +184,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 getWeekRange(),
                 style: const TextStyle(
                   color: ColorConst.textColor,
-                  // fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.arrow_forward_ios, size: 18),
+                icon: const Icon(Icons.arrow_forward_ios, size: 20),
                 onPressed: nextWeek,
                 color: DateTime.now().difference(weekStart).inDays < 7
                     ? Colors.grey
@@ -190,222 +200,98 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ));
   }
 
-  Widget driverStats() {
-    return Expanded(
-      child: Card(
-        color: ColorConst.boxColor,
-        child: Padding(
-          padding: EdgeInsets.all(w * 0.02),
-          child: isDriversLoading
-              ? SizedBox(
-                  height: h * 0.25,
-                  width: w * 0.5,
-                  child: const Center(
-                    child: CupertinoActivityIndicator(
-                      color: ColorConst.primaryColor,
-                    ),
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Drivers',
-                      style: TextStyle(
-                        color: ColorConst.textColor,
-                        fontSize: w * 0.05,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '5',
-                              style: TextStyle(
-                                fontSize: w * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.successColor,
-                              ),
-                            ),
-                            Text(
-                              'Active',
-                              style: TextStyle(
-                                fontSize: w * 0.04,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '3',
-                              style: TextStyle(
-                                fontSize: w * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.errorColor,
-                              ),
-                            ),
-                            Text(
-                              'Inactive',
-                              style: TextStyle(
-                                fontSize: w * 0.04,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Divider(color: Colors.grey),
-                    ListView.builder(
-                      padding: const EdgeInsets.only(top: 0),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: 3,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: h * 0.01),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.circle,
-                                color: ColorConst.successColor,
-                                size: w * 0.035,
-                              ),
-                              SizedBox(width: w * 0.025),
-                              Expanded(
-                                child: Text(
-                                  'Fazil Naz Kolambil',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: ColorConst.textColor,
-                                    fontSize: w * 0.04,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+  Widget rentStats() {
+    double totalToGet = rentModels.isEmpty
+        ? 0
+        : rentModels.fold(0, (toGet, a) => toGet - a.totaltoPay);
+    double totalRent = rentModels.isEmpty
+        ? 0
+        : rentModels
+            .map((item) => item.selectedShift * item.vehicleRent)
+            .reduce((rent, element) => rent + element);
+    double driversWallet = driverModels.isEmpty
+        ? 0
+        : driverModels.fold(0, (wallet, a) => wallet + a.wallet);
+    double availableBalance = totalToGet + driversWallet;
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSummaryCard(
+                title: 'Vehicle rent',
+                value: '₹ ${totalRent.toStringAsFixed(2)}',
+                subtitle: 'Total rent for all vehicles'),
+            _buildSummaryCard(
+                title: 'Total to get',
+                value: '₹ ${totalToGet.toStringAsFixed(2)}',
+                subtitle: 'Total amount to get from drivers'),
+          ],
         ),
-      ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSummaryCard(
+                title: 'Drivers to pay',
+                value: '₹ ${driversWallet.toStringAsFixed(2)}',
+                subtitle: 'Balance amount to be paid by the drivers'),
+            _buildSummaryCard(
+                title: 'Available balance',
+                value: '₹ ${availableBalance.toStringAsFixed(2)}',
+                subtitle: 'Total amount available in your wallet'),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget vehicleStats() {
-    return Expanded(
+  Widget _buildSummaryCard(
+      {required String title,
+      required String value,
+      required String subtitle}) {
+    return SizedBox(
+      width: w * 0.5,
       child: Card(
+        elevation: 2,
+        margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: h * 0.01),
+        shadowColor: Colors.black26,
         color: ColorConst.boxColor,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(w * 0.03)),
         child: Padding(
-          padding: EdgeInsets.all(w * 0.02),
-          child: isVehiclesLoading
-              ? SizedBox(
-                  height: h * 0.25,
-                  width: w * 0.5,
-                  child: const Center(
-                    child: CupertinoActivityIndicator(
-                      color: ColorConst.primaryColor,
-                    ),
-                  ),
-                )
+          padding: EdgeInsets.all(w * 0.05),
+          child: vehicleModels.isEmpty &&
+                  rentModels.isEmpty &&
+                  driverModels.isEmpty
+              ? const Center(
+                  child: Text('No data',
+                      style: TextStyle(color: ColorConst.textColor)))
               : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Text(
-                      'Vehicles',
-                      style: TextStyle(
+                      value,
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: ColorConst.textColor),
+                    ),
+                    SizedBox(height: h * 0.01),
+                    Text(
+                      title,
+                      style: const TextStyle(
                         color: ColorConst.textColor,
-                        fontSize: w * 0.05,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '5',
-                              style: TextStyle(
-                                fontSize: w * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.successColor,
-                              ),
-                            ),
-                            Text(
-                              'In use',
-                              style: TextStyle(
-                                fontSize: w * 0.04,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '3',
-                              style: TextStyle(
-                                fontSize: w * 0.06,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.errorColor,
-                              ),
-                            ),
-                            Text(
-                              'Available',
-                              style: TextStyle(
-                                fontSize: w * 0.04,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Divider(color: Colors.grey),
-                    ListView.builder(
-                      padding: const EdgeInsets.only(top: 0),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: 3,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: h * 0.01),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.circle,
-                                color: ColorConst.successColor,
-                                size: w * 0.035,
-                              ),
-                              SizedBox(width: w * 0.025),
-                              Expanded(
-                                child: Text(
-                                  'KA03AM3086',
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: ColorConst.textColor,
-                                    fontSize: w * 0.04,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                    SizedBox(height: h * 0.01),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -415,211 +301,236 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget revenueStats() {
-    int totalShifts = 12;
-    int totalTrips = 4;
-    double totalEarnings = 2300.50;
-    double totalRefund = 550.73;
-    double yourEarnings = totalEarnings + totalRefund;
+    List<int> tripsPerDay = [];
+    List<int> rentalDays = [];
+    Map rentalPlan = {};
+    double insurance = 0;
+    for (var vehicle in vehicleModels) {
+      rentalPlan = widget.fleet[vehicle.rentalPlan];
+      tripsPerDay.add(vehicle.totalTrips);
+      if (vehicle.droppedOn != null) {
+        insurance += rentalPlan['insurance'] ??
+            0 +
+                (vehicle.droppedOn!
+                        .toDate()
+                        .difference(vehicle.addedOn.toDate())
+                        .inDays) %
+                    7 *
+                    vehicleModels.length;
+        rentalDays.add((vehicle.droppedOn!
+                .toDate()
+                .difference(vehicle.addedOn.toDate())
+                .inDays) %
+            7);
+      } else {
+        insurance += rentalPlan['insurance'] ??
+            0 +
+                (DateTime.now().difference(vehicle.addedOn.toDate()).inDays) %
+                    7 *
+                    vehicleModels.length;
+        rentalDays.add(
+            (DateTime.now().difference(vehicle.addedOn.toDate()).inDays) % 7);
+      }
+    }
+    double totalToGet = rentModels.isEmpty
+        ? 0
+        : rentModels.fold(0, (toGet, a) => toGet - a.totaltoPay);
+    double fleetRent = CommonWidgets().calculateWeeklyRent(
+        rentalPlan: rentalPlan['rental_plans'] ?? [],
+        tripsPerDay: tripsPerDay,
+        rentalDays: rentalDays);
+    double totaltoPay = fleetRent + insurance;
+    double totalRevenue = totalToGet - totaltoPay;
+    List<double> chartData = List.filled(7, 0.0);
+    for (var rent in rentModels) {
+      DateTime date = rent.startTime.toDate();
+      int weekdayIndex = date.weekday - 1;
+
+      double amount = -rent.totaltoPay.toDouble();
+      chartData[weekdayIndex] += amount;
+    }
     return Card(
       margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
       color: ColorConst.boxColor,
       child: Padding(
         padding: EdgeInsets.all(w * 0.05),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.insert_chart, color: ColorConst.textColor),
-                SizedBox(width: w * 0.03),
-                const Text(
-                  'Revenue',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: ColorConst.textColor,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: h * 0.02),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      totalShifts.toString(),
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+        child: vehicleModels.isEmpty &&
+                rentModels.isEmpty &&
+                driverModels.isEmpty
+            ? const Center(
+                child: Text('No data',
+                    style: TextStyle(color: ColorConst.textColor)))
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.insert_chart,
                           color: ColorConst.textColor),
-                    ),
-                    SizedBox(height: w * 0.03),
-                    const Text(
-                      'Total rent',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Text(
-                      totalTrips.toString(),
-                      style: const TextStyle(
-                          fontSize: 16,
+                      SizedBox(width: w * 0.03),
+                      const Text(
+                        'Revenue Statistics',
+                        style: TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
-                          color: ColorConst.textColor),
-                    ),
-                    SizedBox(height: w * 0.03),
-                    const Text(
-                      'Balance to get',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  children: [
-                    Text(
-                      yourEarnings.toStringAsFixed(2),
-                      style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: ColorConst.textColor),
-                    ),
-                    SizedBox(height: w * 0.03),
-                    const Text(
-                      'Total revenue',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget revenueChart() {
-    List chartData = [1051.0, 2000.0, 3500.0, 4700.0, 3825.80, 2956.0, 6847.0];
-    return Card(
-      margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
-      color: ColorConst.boxColor,
-      shadowColor: Colors.black26,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.stacked_bar_chart_sharp,
-                    color: ColorConst.textColor),
-                SizedBox(width: w * 0.03),
-                const Text(
-                  'Revenue Statistics',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: ColorConst.textColor,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: h * 0.04),
-            SizedBox(
-              height: h * 0.35,
-              child: BarChart(
-                duration: Duration(seconds: 2),
-                BarChartData(
-                  backgroundColor: ColorConst.boxColor,
-                  alignment: BarChartAlignment.spaceAround,
-                  gridData: const FlGridData(drawVerticalLine: false),
-                  maxY: (chartData.reduce((a, b) => a > b ? a : b)) + 1000,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        return BarTooltipItem(
-                          '₹ ${rod.toY.toStringAsFixed(2)}',
-                          const TextStyle(color: Colors.white),
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          final index = value.toInt();
-                          if (index < 0 || index > 6) {
-                            return const SizedBox.shrink();
-                          }
-                          final date = weekStart.add(Duration(days: index));
-                          return Padding(
-                            padding: EdgeInsets.only(top: w * 0.02),
-                            child: Text(
-                              DateFormat('E').format(date),
-                              style: const TextStyle(
-                                  fontSize: 12,
-                                  color: ColorConst.textColor,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: w * 0.1,
-                        minIncluded: false,
-                        maxIncluded: false,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            '${value.toString()[0]}k',
-                            style: const TextStyle(color: ColorConst.textColor),
-                          );
-                        },
-                      ),
-                    ),
-                    rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                    topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: List.generate(7, (index) {
-                    return BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: chartData[index],
-                          color: ColorConst.primaryColor,
-                          width: 18,
-                          borderRadius: BorderRadius.circular(4),
+                          color: ColorConst.textColor,
                         ),
-                      ],
-                    );
-                  }),
-                ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: h * 0.02),
+                  Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                fleetRent.toStringAsFixed(2),
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: ColorConst.textColor),
+                              ),
+                              SizedBox(height: w * 0.03),
+                              const Text(
+                                'Fleet rent',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                totaltoPay.toStringAsFixed(2),
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: ColorConst.textColor),
+                              ),
+                              SizedBox(height: w * 0.03),
+                              const Text(
+                                'Total to pay',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
+                                totalRevenue.toStringAsFixed(2),
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: ColorConst.textColor),
+                              ),
+                              SizedBox(height: w * 0.03),
+                              const Text(
+                                'Total revenue',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: h * 0.04),
+                      SizedBox(
+                        height: h * 0.35,
+                        child: BarChart(
+                          duration: const Duration(seconds: 2),
+                          BarChartData(
+                            backgroundColor: ColorConst.boxColor,
+                            alignment: BarChartAlignment.spaceAround,
+                            gridData: const FlGridData(drawVerticalLine: false),
+                            maxY: (chartData.reduce((a, b) => a > b ? a : b)) +
+                                1000,
+                            barTouchData: BarTouchData(
+                              enabled: true,
+                              touchTooltipData: BarTouchTooltipData(
+                                getTooltipItem:
+                                    (group, groupIndex, rod, rodIndex) {
+                                  return BarTooltipItem(
+                                    '₹ ${rod.toY.toStringAsFixed(2)}',
+                                    const TextStyle(color: Colors.white),
+                                  );
+                                },
+                              ),
+                            ),
+                            titlesData: FlTitlesData(
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, meta) {
+                                    final index = value.toInt();
+                                    if (index < 0 || index > 6) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    final date =
+                                        weekStart.add(Duration(days: index));
+                                    return Padding(
+                                      padding: EdgeInsets.only(top: w * 0.02),
+                                      child: Text(
+                                        DateFormat('E').format(date),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: ColorConst.textColor,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              leftTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: w * 0.1,
+                                  minIncluded: false,
+                                  maxIncluded: false,
+                                  getTitlesWidget: (value, meta) {
+                                    return Text(
+                                      '${value.toString()[0]}k',
+                                      style: const TextStyle(
+                                          color: ColorConst.textColor),
+                                    );
+                                  },
+                                ),
+                              ),
+                              rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            borderData: FlBorderData(show: false),
+                            barGroups: List.generate(7, (index) {
+                              return BarChartGroupData(
+                                x: index,
+                                barRods: [
+                                  BarChartRodData(
+                                    toY: chartData[index],
+                                    color: ColorConst.primaryColor,
+                                    width: 18,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -628,13 +539,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return Card(
       color: ColorConst.boxColor,
       margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
-      child: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.only(top: w * 0.05, left: w * 0.03),
-            child: Row(
+      child: Padding(
+        padding: EdgeInsets.only(top: w * 0.05, left: w * 0.03),
+        child: Column(
+          children: [
+            Row(
               children: [
-                const Icon(Icons.menu, color: ColorConst.textColor),
+                const Icon(Icons.trending_up_outlined,
+                    color: ColorConst.textColor),
                 SizedBox(width: w * 0.03),
                 const Text(
                   'Rent Details',
@@ -646,100 +558,114 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ],
             ),
-          ),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: rentModels.length,
-            itemBuilder: (context, index) {
-              DateTime date = rentModels[index].startTime.toDate();
-              double totalEarning = rentModels[index].totalEarnings +
-                  rentModels[index].refund -
-                  rentModels[index].cashCollected;
-              double balance = totalEarning -
-                  (rentModels[index].shift * rentModels[index].rent);
-              return ExpandablePanel(
-                theme: ExpandableThemeData(
-                  useInkWell: false,
-                  iconColor: ColorConst.textColor,
-                  iconSize: w * 0.06,
-                ),
-                header: ListTile(
-                  leading: Container(
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(8),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: rentModels.length,
+              itemBuilder: (context, index) {
+                DateTime date = rentModels[index].startTime.toDate();
+                double totalEarning = rentModels[index].totalEarnings +
+                    rentModels[index].refund -
+                    rentModels[index].cashCollected;
+                double balance = totalEarning -
+                    (rentModels[index].selectedShift *
+                        rentModels[index].vehicleRent);
+                return ExpandablePanel(
+                  theme: ExpandableThemeData(
+                    useInkWell: false,
+                    iconColor: ColorConst.textColor,
+                    iconSize: w * 0.06,
+                  ),
+                  header: ListTile(
+                    leading: Container(
+                      width: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            DateFormat('E').format(date),
+                            style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey),
+                          ),
+                          Text(
+                            DateFormat('d').format(date),
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: ColorConst.textColor),
+                          ),
+                        ],
+                      ),
                     ),
-                    alignment: Alignment.center,
+                    title: Text(
+                      rentModels[index].vehicleNumber,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: ColorConst.textColor,
+                      ),
+                    ),
+                    subtitle: Text(
+                      rentModels[index].driverName,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                  collapsed: const SizedBox(),
+                  expanded: Padding(
+                    padding: EdgeInsets.all(w * 0.03),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          DateFormat('E').format(date),
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey),
-                        ),
-                        Text(
-                          DateFormat('d').format(date),
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: ColorConst.textColor),
-                        ),
+                        _textRow(
+                            label: 'Time',
+                            value: rentModels[index].rentStatus.toUpperCase() ==
+                                    'COMPLETED'
+                                ? "${DateFormat('EEE, h:mm a').format(rentModels[index].startTime.toDate())} - ${DateFormat('EEE, h:mm a').format(rentModels[index].endTime!.toDate())}"
+                                : 'On going'),
+                        _textRow(
+                            label: 'Total shift',
+                            value: rentModels[index].selectedShift.toString()),
+                        _textRow(
+                            label: 'Total trips',
+                            value: rentModels[index].totalTrips.toString()),
+                        _textRow(
+                            label: 'Total earnings',
+                            value: rentModels[index]
+                                .totalEarnings
+                                .toStringAsFixed(2)),
+                        _textRow(
+                            label: 'Refund',
+                            value: rentModels[index].refund.toStringAsFixed(2)),
+                        _textRow(
+                            label: 'Cash collected',
+                            value: rentModels[index]
+                                .cashCollected
+                                .toStringAsFixed(2)),
+                        _textRow(
+                            label: 'Vehicle rent',
+                            value: (rentModels[index].selectedShift *
+                                    rentModels[index].vehicleRent)
+                                .toStringAsFixed(2)),
+                        _textRow(
+                            label: 'Balance to pay',
+                            value: (-rentModels[index].totaltoPay)
+                                .toStringAsFixed(2))
                       ],
                     ),
                   ),
-                  title: Text(
-                    rentModels[index].vehicleNumber,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: ColorConst.textColor,
-                    ),
-                  ),
-                  subtitle: Text(
-                    "${DateFormat.jm().format(rentModels[index].startTime.toDate())} - ${DateFormat.jm().format(rentModels[index].endTime!.toDate())}",
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-                collapsed: const SizedBox(),
-                expanded: Padding(
-                  padding: EdgeInsets.all(w * 0.03),
-                  child: Column(
-                    children: [
-                      _textRow(
-                          label: 'Total shift',
-                          value: rentModels[index].shift.toString()),
-                      _textRow(
-                          label: 'Total earnings',
-                          value: rentModels[index]
-                              .totalEarnings
-                              .toStringAsFixed(2)),
-                      _textRow(
-                          label: 'Refund',
-                          value: rentModels[index].refund.toStringAsFixed(2)),
-                      _textRow(
-                          label: 'Cash collected',
-                          value: rentModels[index]
-                              .cashCollected
-                              .toStringAsFixed(2)),
-                      _textRow(
-                          label: 'Vehicle rent',
-                          value:
-                              (rentModels[index].shift * rentModels[index].rent)
-                                  .toStringAsFixed(2)),
-                    ],
-                  ),
-                ),
-              );
-            },
-            separatorBuilder: (context, index) => Divider(
-              color: Colors.grey[700],
+                );
+              },
+              separatorBuilder: (context, index) => Divider(
+                color: Colors.grey[700],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

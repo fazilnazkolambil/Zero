@@ -4,76 +4,74 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zero/adminPages/screens/admin_bottom_page.dart';
 import 'package:zero/auth/auth_page.dart';
+import 'package:zero/auth/switch_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/adminPages/screens/_admin_dashboard.dart';
-import 'package:zero/welcome_page.dart';
 
 class DriverProfilePage extends StatelessWidget {
-  final bool isDeleted;
-  final int totalTrips;
-  final double totalEarnings;
-  final double cashCollected;
-  final double refund;
-  final double wallet;
-  final String onRent;
-  final String driverName;
-  final String mobileNumber;
-  final String status;
-  final String driverId;
-  final String isBlocked;
-  final String organisationId;
-  final String organisationName;
-  final int targetTrips;
-  final int totalShifts;
-  final double vehicleRent;
-  final Timestamp createdOn;
-
-  const DriverProfilePage({
-    super.key,
-    required this.isDeleted,
-    required this.totalTrips,
-    required this.totalEarnings,
-    required this.cashCollected,
-    required this.refund,
-    required this.wallet,
-    required this.onRent,
-    required this.driverName,
-    required this.mobileNumber,
-    required this.status,
-    required this.driverId,
-    required this.isBlocked,
-    required this.organisationId,
-    required this.organisationName,
-    required this.targetTrips,
-    required this.totalShifts,
-    required this.vehicleRent,
-    required this.createdOn,
-  });
+  const DriverProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: NestedScrollView(
-      headerSliverBuilder: (context, innerBoxIsScrolled) => [appBar()],
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: h * 0.02,
-            ),
-            progressDetails(),
-            _buildProfileDetails(),
-            _buildFinancialDetails(),
-            SizedBox(height: h * 0.03),
-            logoutButton(context),
-            versionText()
-          ],
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [appBar()],
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(
+                height: h * 0.02,
+              ),
+              progressDetails(),
+              _buildProfileDetails(),
+              _buildFinancialDetails(),
+              SizedBox(height: h * 0.03),
+              logoutButton(context),
+              versionText(),
+              if (currentUser!.userRole.toUpperCase() == 'ADMIN')
+                SizedBox(
+                  height: h * 0.08,
+                )
+            ],
+          ),
         ),
       ),
-    ));
+      floatingActionButton: currentUser!.userRole.toUpperCase() == 'ADMIN'
+          ? GestureDetector(
+              onTap: () async {
+                Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          const SwitchModePage(isDriving: false),
+                    ));
+              },
+              child: Container(
+                width: w * 0.6,
+                padding: EdgeInsets.symmetric(
+                    horizontal: w * 0.03, vertical: h * 0.01),
+                margin: EdgeInsets.only(right: w * 0.03),
+                decoration: BoxDecoration(
+                    color: ColorConst.primaryColor,
+                    borderRadius: BorderRadius.circular(w * 0.05)),
+                child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Icon(
+                        Icons.swap_horiz_outlined,
+                        color: ColorConst.backgroundColor,
+                      ),
+                      Text('Switch to Admin',
+                          style: TextStyle(
+                              color: ColorConst.backgroundColor,
+                              fontWeight: FontWeight.bold))
+                    ]),
+              ),
+            )
+          : null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
   }
 
   Widget appBar() {
@@ -87,7 +85,7 @@ class DriverProfilePage extends StatelessWidget {
         expandedTitleScale: 1,
         titlePadding: EdgeInsets.only(left: w * 0.07, bottom: w * 0.05),
         title: Text(
-          driverName,
+          currentDriver!.driverName,
           style: TextStyle(
             color: ColorConst.textColor,
             fontWeight: FontWeight.bold,
@@ -124,7 +122,7 @@ class DriverProfilePage extends StatelessWidget {
                           radius: 50,
                           backgroundColor: ColorConst.primaryColor,
                           child: Text(
-                            driverName[0],
+                            currentDriver!.driverName[0],
                             style: TextStyle(
                               fontSize: w * 0.15,
                               fontWeight: FontWeight.bold,
@@ -148,12 +146,12 @@ class DriverProfilePage extends StatelessWidget {
                         height: h * 0.01,
                       ),
                       Text(
-                        wallet.toStringAsFixed(2),
+                        currentDriver!.wallet.toStringAsFixed(2),
                         style: TextStyle(
                             fontSize: w * 0.06,
-                            color: wallet > 0
+                            color: currentDriver!.wallet > 0
                                 ? ColorConst.successColor
-                                : wallet == 0
+                                : currentDriver!.wallet == 0
                                     ? Colors.grey
                                     : ColorConst.errorColor,
                             fontWeight: FontWeight.bold),
@@ -161,7 +159,7 @@ class DriverProfilePage extends StatelessWidget {
                       SizedBox(
                         height: h * 0.01,
                       ),
-                      if (wallet < 0)
+                      if (currentDriver!.wallet < 0)
                         ElevatedButton(
                             style: const ButtonStyle(
                                 shadowColor: WidgetStatePropertyAll(
@@ -174,56 +172,6 @@ class DriverProfilePage extends StatelessWidget {
                             child: const Text('Pay now'))
                     ],
                   )
-                  // Column(
-                  //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  //   crossAxisAlignment: CrossAxisAlignment.start,
-                  //   children: [
-                  //     Row(
-                  //       children: [
-                  //         const Icon(Icons.call, color: Colors.grey),
-                  //         SizedBox(width: w * 0.02),
-                  //         Text(mobileNumber,
-                  //             style: const TextStyle(
-                  //                 color: Colors.grey,
-                  //                 fontWeight: FontWeight.bold))
-                  //       ],
-                  //     ),
-                  //     Row(
-                  //       children: [
-                  //         const Icon(Icons.online_prediction,
-                  //             color: Colors.grey),
-                  //         SizedBox(width: w * 0.02),
-                  //         Text(status.toUpperCase(),
-                  //             style: TextStyle(
-                  //                 color: status.toUpperCase() == 'ACTIVE'
-                  //                     ? ColorConst.successColor
-                  //                     : status.toUpperCase() == 'ONLEAVE'
-                  //                         ? Colors.grey
-                  //                         : ColorConst.errorColor,
-                  //                 fontWeight: FontWeight.bold))
-                  //       ],
-                  //     ),
-                  //     Row(
-                  //       children: [
-                  //         const Icon(
-                  //           Icons.wallet,
-                  //           color: Colors.grey,
-                  //         ),
-                  //         SizedBox(width: w * 0.02),
-                  //         Text(
-                  //           wallet.toStringAsFixed(2),
-                  //           style: TextStyle(
-                  //               color: wallet > 0
-                  //                   ? ColorConst.successColor
-                  //                   : wallet == 0
-                  //                       ? Colors.grey
-                  //                       : ColorConst.errorColor,
-                  //               fontWeight: FontWeight.bold),
-                  //         ),
-                  //       ],
-                  //     ),
-                  //   ],
-                  // )
                 ],
               ),
             ),
@@ -234,7 +182,9 @@ class DriverProfilePage extends StatelessWidget {
   }
 
   Widget progressDetails() {
-    double totalEarning = totalEarnings + refund + wallet;
+    double totalEarning = currentDriver!.totalEarnings +
+        currentDriver!.refund -
+        currentDriver!.cashCollected;
     return Card(
         margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
         color: ColorConst.boxColor,
@@ -264,7 +214,7 @@ class DriverProfilePage extends StatelessWidget {
                   Column(
                     children: [
                       Text(
-                        totalShifts.toString(),
+                        currentDriver!.totalShifts.toString(),
                         style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -283,7 +233,7 @@ class DriverProfilePage extends StatelessWidget {
                   Column(
                     children: [
                       Text(
-                        totalTrips.toString(),
+                        currentDriver!.totalTrips.toString(),
                         style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -351,12 +301,14 @@ class DriverProfilePage extends StatelessWidget {
             SizedBox(
               height: h * 0.02,
             ),
-            _buildTextRow('Name', driverName),
-            _buildTextRow('Mobile number', mobileNumber),
-            _buildTextRow('status', status.toUpperCase()),
-            _buildTextRow('Organisation', organisationName),
+            _buildTextRow('Name', currentDriver!.driverName),
+            _buildTextRow('Mobile number', currentDriver!.mobileNumber),
+            _buildTextRow('status', currentDriver!.status.toUpperCase()),
+            _buildTextRow('Organisation', currentDriver!.organisationName),
             _buildTextRow(
-                'Created on', DateFormat.yMMMEd().format(createdOn.toDate())),
+                'Created on',
+                DateFormat.yMMMEd()
+                    .format(DateTime.parse(currentDriver!.driverAddedOn))),
           ],
         ),
       ),
@@ -390,9 +342,11 @@ class DriverProfilePage extends StatelessWidget {
             SizedBox(
               height: h * 0.02,
             ),
-            _buildTextRow('Total Earnings', "₹ $totalEarnings"),
-            _buildTextRow('Total Refund', '₹ $refund'),
-            _buildTextRow('Total Cash Collected', '₹ $cashCollected'),
+            _buildTextRow(
+                'Total Earnings', "₹ ${currentDriver!.totalEarnings}"),
+            _buildTextRow('Total Refund', '₹ ${currentDriver!.refund}'),
+            _buildTextRow(
+                'Total Cash Collected', '₹ ${currentDriver!.cashCollected}'),
           ],
         ),
       ),

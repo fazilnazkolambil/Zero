@@ -3,11 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class RentModel {
   String rentId;
   String driverId;
+  String driverName;
   String vehicleId;
   String vehicleNumber;
   Timestamp startTime;
-  double rent;
-  int shift;
+  double vehicleRent;
+  int selectedShift;
   Timestamp? endTime;
   int totalTrips;
   double totalEarnings;
@@ -18,11 +19,12 @@ class RentModel {
   RentModel({
     required this.rentId,
     required this.driverId,
+    required this.driverName,
     required this.vehicleId,
     required this.vehicleNumber,
     required this.startTime,
-    required this.rent,
-    required this.shift,
+    required this.vehicleRent,
+    required this.selectedShift,
     this.endTime,
     required this.totalTrips,
     required this.totalEarnings,
@@ -34,11 +36,12 @@ class RentModel {
   RentModel copywith(
           {String? rentId,
           String? driverId,
+          String? driverName,
           String? vehicleId,
           String? vehicleNumber,
           Timestamp? startTime,
-          double? rent,
-          int? shift,
+          double? vehicleRent,
+          int? selectedShift,
           Timestamp? endTime,
           int? totalTrips,
           double? totalEarnings,
@@ -49,11 +52,12 @@ class RentModel {
       RentModel(
         rentId: rentId ?? this.rentId,
         driverId: driverId ?? this.driverId,
+        driverName: driverName ?? this.driverName,
         vehicleId: vehicleId ?? this.vehicleId,
         vehicleNumber: vehicleNumber ?? this.vehicleNumber,
         startTime: startTime ?? this.startTime,
-        rent: rent ?? this.rent,
-        shift: shift ?? this.shift,
+        vehicleRent: vehicleRent ?? this.vehicleRent,
+        selectedShift: selectedShift ?? this.selectedShift,
         endTime: endTime ?? this.endTime,
         totalTrips: totalTrips ?? this.totalTrips,
         totalEarnings: totalEarnings ?? this.totalEarnings,
@@ -66,11 +70,12 @@ class RentModel {
     return RentModel(
       rentId: json['rent_id'] ?? '',
       driverId: json['driver_id'] ?? '',
+      driverName: json['driver_name'] ?? '',
       vehicleId: json['vehicle_id'] ?? '',
       vehicleNumber: json['vehicle_number'] ?? '',
       startTime: json['start_time'],
-      rent: json['rent'] ?? 0,
-      shift: json['shift'] ?? 0,
+      vehicleRent: json['vehicle_rent'] ?? 0,
+      selectedShift: json['selected_shift'] ?? 0,
       endTime: json['end_time'],
       totalTrips: json['total_trips'] ?? 0,
       totalEarnings: json['total_earnings'] ?? 0,
@@ -83,11 +88,12 @@ class RentModel {
   Map<String, dynamic> toJson() => {
         'rent_id': rentId,
         'driver_id': driverId,
+        'driver_name': driverName,
         'vehicle_id': vehicleId,
         'vehicle_number': vehicleNumber,
         'start_time': startTime,
-        'rent': rent,
-        'shift': shift,
+        'vehicle_rent': vehicleRent,
+        'selected_shift': selectedShift,
         'end_time': endTime,
         'total_trips': totalTrips,
         'total_earnings': totalEarnings,

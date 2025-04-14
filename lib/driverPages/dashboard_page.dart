@@ -78,39 +78,42 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: NestedScrollView(
-      headerSliverBuilder: (context, innerBoxIsScrolled) =>
-          [appbar(), selectWeek()],
-      body: isLoading
-          ? const Center(
-              child: CupertinoActivityIndicator(
-                color: ColorConst.primaryColor,
-              ),
-            )
-          : rentModels.isEmpty
-              ? const Center(
-                  child: Text(
-                  'You were on Leave!',
-                  style: TextStyle(
-                      color: ColorConst.textColor, fontWeight: FontWeight.bold),
-                ))
-              : SingleChildScrollView(
-                  child: Padding(
-                    padding: EdgeInsets.all(w * 0.05),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        tripStats(),
-                        SizedBox(height: h * 0.02),
-                        stateBreakdown(),
-                        SizedBox(height: h * 0.02),
-                        buildRentList(),
-                      ],
+    return SafeArea(
+      child: Scaffold(
+          body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) =>
+            [appbar(), selectWeek()],
+        body: isLoading
+            ? const Center(
+                child: CupertinoActivityIndicator(
+                  color: ColorConst.primaryColor,
+                ),
+              )
+            : rentModels.isEmpty
+                ? const Center(
+                    child: Text(
+                    'You were on Leave!',
+                    style: TextStyle(
+                        color: ColorConst.textColor,
+                        fontWeight: FontWeight.bold),
+                  ))
+                : SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.all(w * 0.05),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          tripStats(),
+                          SizedBox(height: h * 0.02),
+                          stateBreakdown(),
+                          SizedBox(height: h * 0.02),
+                          buildRentList(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-    ));
+      )),
+    );
   }
 
   Widget appbar() {
@@ -163,18 +166,19 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget tripStats() {
-    int totalShifts = rentModels.fold(0, (shift, a) => shift + a.shift);
+    int totalShifts = rentModels.fold(0, (shift, a) => shift + a.selectedShift);
     int totalTrips = rentModels.fold(0, (trips, a) => trips + a.totalTrips);
     double totalEarnings =
         rentModels.fold(0, (earnings, a) => earnings + a.totalEarnings);
-    double totalRefund = rentModels.fold(0, (refund, a) => refund + a.refund);
-    double totalCashCollected = rentModels.fold(
-        0, (cashCollected, a) => cashCollected + a.cashCollected);
-    double totalRent = rentModels
-        .map((item) => item.shift * item.rent)
-        .reduce((rent, element) => rent + element);
-    double yourEarnings = totalEarnings + totalRefund;
-    double totaltoPay = yourEarnings - totalCashCollected - totalRent;
+    // double totalRefund = rentModels.fold(0, (refund, a) => refund + a.refund);
+    // double totalCashCollected = rentModels.fold(
+    //     0, (cashCollected, a) => cashCollected + a.cashCollected);
+    // double totalRent = rentModels
+    //     .map((item) => item.selectedShift * item.vehicleRent)
+    //     .reduce((rent, element) => rent + element);
+    // double yourEarnings = totalEarnings + totalRefund;
+    double totaltoPay =
+        rentModels.fold(0, (totaltoPay, a) => totaltoPay - a.totaltoPay);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -243,7 +247,7 @@ class _DashboardPageState extends State<DashboardPage> {
               Column(
                 children: [
                   Text(
-                    yourEarnings.toStringAsFixed(2),
+                    totalEarnings.toStringAsFixed(2),
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -326,7 +330,7 @@ class _DashboardPageState extends State<DashboardPage> {
     double totalCashCollected = rentModels.fold(
         0, (cashCollected, a) => cashCollected + a.cashCollected);
     double totalRent = rentModels
-        .map((item) => item.shift * item.rent)
+        .map((item) => item.selectedShift * item.vehicleRent)
         .reduce((rent, element) => rent + element);
     double balance = totalEarnings + totalRefund - totalCashCollected;
     double toPay = balance - totalRent;
@@ -445,11 +449,12 @@ class _DashboardPageState extends State<DashboardPage> {
               itemCount: rentModels.length,
               itemBuilder: (context, index) {
                 DateTime date = rentModels[index].startTime.toDate();
-                double totalEarning = rentModels[index].totalEarnings +
-                    rentModels[index].refund -
-                    rentModels[index].cashCollected;
-                double balance = totalEarning -
-                    (rentModels[index].shift * rentModels[index].rent);
+                // double totalEarning = rentModels[index].totalEarnings +
+                //     rentModels[index].refund -
+                //     rentModels[index].cashCollected;
+                // double balance = totalEarning -
+                //     (rentModels[index].selectedShift *
+                //         rentModels[index].vehicleRent);
                 return ExpandablePanel(
                   theme: ExpandableThemeData(
                     useInkWell: false,
@@ -493,7 +498,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     subtitle: Text(
                       "${DateFormat.jm().format(rentModels[index].startTime.toDate())} - ${DateFormat.jm().format(rentModels[index].endTime!.toDate())}",
-                      style: TextStyle(color: Colors.grey),
+                      style: const TextStyle(color: Colors.grey),
                     ),
                     // trailing: Text(
                     //   '₹${(balance).toStringAsFixed(2)}',
@@ -511,7 +516,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       children: [
                         _breakdown(
                             label: 'Total shift',
-                            value: rentModels[index].shift.toString()),
+                            value: rentModels[index].selectedShift.toString()),
                         _breakdown(
                             label: 'Total earnings',
                             value: rentModels[index]
@@ -527,8 +532,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                 .toStringAsFixed(2)),
                         _breakdown(
                             label: 'Vehicle rent',
-                            value: (rentModels[index].shift *
-                                    rentModels[index].rent)
+                            value: (rentModels[index].selectedShift *
+                                    rentModels[index].vehicleRent)
+                                .toStringAsFixed(2)),
+                        _breakdown(
+                            label: 'To pay',
+                            value: (rentModels[index].totaltoPay)
                                 .toStringAsFixed(2)),
                       ],
                     ),

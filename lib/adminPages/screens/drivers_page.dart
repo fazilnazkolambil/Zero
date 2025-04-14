@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:expandable/expandable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:intl/intl.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 import 'package:timeago/timeago.dart' as timeago;
@@ -17,22 +21,20 @@ class DriversPage extends StatefulWidget {
 class _DriversPageState extends State<DriversPage> {
   bool isLoading = false;
   bool isDriversLoading = false;
-  List<UserModel> driverModels = [];
+  List<DriverModel> driverModels = [];
   Future getDrivers() async {
     driverModels.clear();
     setState(() {
       isDriversLoading = true;
     });
     var drivers = await FirebaseFirestore.instance
-        // .collection('organisations')
-        // .doc(currentUser!.organisationId)
-        // .collection('drivers')
-        .collection('users')
-        .where('organisation_id', isEqualTo: currentUser!.organisationId)
-        .where('user_role', isEqualTo: 'Driver')
+        .collection('organisations')
+        .doc(currentUser!.organisationId)
+        .collection('drivers')
+        .where('is_deleted', isEqualTo: false)
         .get();
     for (var driver in drivers.docs) {
-      driverModels.add(UserModel.fromJson(driver.data()));
+      driverModels.add(DriverModel.fromJson(driver.data()));
     }
     setState(() {
       isDriversLoading = false;
@@ -47,15 +49,17 @@ class _DriversPageState extends State<DriversPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) =>
-                [appbar(), driverStats()],
-            body: SingleChildScrollView(
-              child: Column(
-                children: [_buildDriverTab()],
-              ),
-            )));
+    return SafeArea(
+      child: Scaffold(
+          body: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) =>
+                  [appbar(), driverStats()],
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [_buildDriverTab()],
+                ),
+              ))),
+    );
   }
 
   Widget appbar() {
@@ -71,7 +75,7 @@ class _DriversPageState extends State<DriversPage> {
 
   Widget driverStats() {
     int onDutyDrivers =
-        driverModels.where((element) => element.onRent!.isNotEmpty).length;
+        driverModels.where((element) => element.onRent.isNotEmpty).length;
     int availableDrivers = driverModels.length - onDutyDrivers;
     return SliverAppBar(
       backgroundColor: ColorConst.backgroundColor,
@@ -79,275 +83,512 @@ class _DriversPageState extends State<DriversPage> {
       toolbarHeight: h * 0.1,
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
-        background: Padding(
-          padding: EdgeInsets.only(top: w * 0.05),
-          child: Card(
-            color: ColorConst.boxColor,
-            margin:
-                EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
-            child: isDriversLoading
-                ? const Center(
-                    child: CupertinoActivityIndicator(
-                    color: ColorConst.primaryColor,
-                  ))
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            driverModels.length.toString(),
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.textColor),
+        background: Card(
+          color: ColorConst.boxColor,
+          child: isDriversLoading
+              ? const Center(
+                  child: CupertinoActivityIndicator(
+                  color: ColorConst.primaryColor,
+                ))
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          driverModels.length.toString(),
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ColorConst.textColor),
+                        ),
+                        SizedBox(height: w * 0.03),
+                        const Text(
+                          'Drivers',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
                           ),
-                          SizedBox(height: w * 0.03),
-                          const Text(
-                            'Total drivers',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          onDutyDrivers.toString(),
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ColorConst.textColor),
+                        ),
+                        SizedBox(height: w * 0.03),
+                        const Text(
+                          'On duty',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
                           ),
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            onDutyDrivers.toString(),
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.textColor),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          availableDrivers.toString(),
+                          style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ColorConst.textColor),
+                        ),
+                        SizedBox(height: w * 0.03),
+                        const Text(
+                          'Idle',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
                           ),
-                          SizedBox(height: w * 0.03),
-                          const Text(
-                            'On duty',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            availableDrivers.toString(),
-                            style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: ColorConst.textColor),
-                          ),
-                          SizedBox(height: w * 0.03),
-                          const Text(
-                            'Idle',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          IconButton(
-                              onPressed: () => _showDriverForm(),
-                              icon: const Icon(
-                                Icons.add,
-                                color: ColorConst.textColor,
-                              )),
-                          const Text(
-                            'Add Driver',
-                            style: TextStyle(color: ColorConst.textColor),
-                          )
-                        ],
-                      ),
-                    ],
-                  ),
-          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                        onPressed: () => _showDriverForm(),
+                        icon: const Icon(
+                          Icons.add,
+                          color: ColorConst.textColor,
+                        )),
+                  ],
+                ),
         ),
       ),
     );
   }
 
   Widget _buildDriverTab() {
-    List<UserModel> drivers = driverModels;
+    List<DriverModel> drivers = driverModels;
     return isDriversLoading
         ? const SizedBox()
         : driverModels.isEmpty
             ? _buildEmptyState(
                 'No Drivers added yet', Icons.directions_car_outlined)
             : ListView.builder(
-                padding: const EdgeInsets.only(top: 0),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: drivers.length,
                 itemBuilder: (context, index) {
-                  final tripCompletion = drivers[index].totalTrips! /
-                      (drivers[index].targetTrips! > 0
-                          ? drivers[index].targetTrips!
+                  final tripCompletion = drivers[index].totalTrips /
+                      (drivers[index].targetTrips > 0
+                          ? drivers[index].targetTrips
                           : 1);
                   return Card(
-                    color: ColorConst.boxColor,
-                    margin: EdgeInsets.symmetric(
-                        horizontal: w * 0.03, vertical: w * 0.03),
-                    child: ListTile(
-                        leading: Column(
-                          children: [
-                            Icon(Icons.circle,
-                                size: w * 0.04,
-                                color: drivers[index].onRent!.isNotEmpty
-                                    ? ColorConst.successColor
-                                    : ColorConst.errorColor),
-                            SizedBox(
-                              height: h * 0.01,
-                            ),
-                            Text(
-                              drivers[index].onRent!.isNotEmpty
-                                  ? 'on duty'
-                                  : 'Idle',
-                              style: TextStyle(
-                                  color: ColorConst.textColor,
-                                  fontSize: w * 0.04),
-                            ),
-                          ],
-                        ),
-                        title: Text(
-                          drivers[index].userName,
-                          style: const TextStyle(
-                              color: ColorConst.textColor,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Padding(
-                          padding: EdgeInsets.only(top: h * 0.01),
-                          child: Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: LinearProgressIndicator(
-                                  value:
-                                      tripCompletion > 1 ? 1 : tripCompletion,
-                                  minHeight: 15,
-                                  backgroundColor: Colors.grey.shade200,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    tripCompletion >= 1
-                                        ? ColorConst.successColor
-                                        : ColorConst.errorColor,
-                                  ),
-                                ),
+                      color: ColorConst.boxColor,
+                      margin: EdgeInsets.symmetric(
+                          horizontal: w * 0.03, vertical: w * 0.03),
+                      child: ExpandablePanel(
+                          theme: const ExpandableThemeData(
+                              hasIcon: false, useInkWell: false),
+                          header: ListTile(
+                              contentPadding: EdgeInsets.all(w * 0.03),
+                              minLeadingWidth: w * 0.15,
+                              leading: drivers[index].isBlocked.isEmpty
+                                  ? Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: w * 0.03),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.circle,
+                                              size: w * 0.04,
+                                              color: drivers[index]
+                                                      .onRent
+                                                      .isNotEmpty
+                                                  ? ColorConst.successColor
+                                                  : ColorConst.errorColor),
+                                          SizedBox(
+                                            height: h * 0.01,
+                                          ),
+                                          Text(
+                                            drivers[index].onRent.isNotEmpty
+                                                ? 'on duty'
+                                                : 'Idle',
+                                            style: TextStyle(
+                                                color: ColorConst.textColor,
+                                                fontSize: w * 0.04),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.block,
+                                      color: ColorConst.errorColor,
+                                    ),
+                              title: Text(
+                                drivers[index].driverName,
+                                style: const TextStyle(
+                                    color: ColorConst.textColor,
+                                    fontWeight: FontWeight.bold),
                               ),
-                              SizedBox(height: h * 0.01),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Text(
-                                  '${drivers[index].totalTrips.toString()} / ${drivers[index].targetTrips.toString()} trips',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        trailing: PopupMenuButton(
-                          color: ColorConst.boxColor,
-                          child: const Icon(
-                            Icons.more_vert_rounded,
-                            color: ColorConst.textColor,
-                          ),
-                          itemBuilder: (context) {
-                            return [
-                              PopupMenuItem(
-                                  onTap: () =>
-                                      _showDriverForm(driver: drivers[index]),
-                                  child: const Text(
-                                    'Edit',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        color: ColorConst.textColor),
-                                  )),
-                              PopupMenuItem(
-                                  onTap: () async {
-                                    showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
+                              subtitle: drivers[index].isBlocked.isEmpty
+                                  ? Padding(
+                                      padding: EdgeInsets.only(top: h * 0.01),
+                                      child: Column(
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            child: LinearProgressIndicator(
+                                              value: tripCompletion > 1
+                                                  ? 1
+                                                  : tripCompletion,
+                                              minHeight: 5,
                                               backgroundColor:
-                                                  ColorConst.boxColor,
-                                              title: const Text(
-                                                  'Remove driver?',
-                                                  style: TextStyle(
-                                                      color: ColorConst
-                                                          .textColor)),
-                                              content: const Text(
-                                                'Are you sure you want to remove this driver?',
-                                                style: TextStyle(
-                                                    color:
-                                                        ColorConst.textColor),
+                                                  Colors.grey.shade200,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                tripCompletion >= 1
+                                                    ? ColorConst.successColor
+                                                    : ColorConst.errorColor,
                                               ),
-                                              actions: [
-                                                TextButton(
-                                                    style: const ButtonStyle(
-                                                      foregroundColor:
-                                                          WidgetStatePropertyAll(
-                                                              ColorConst
-                                                                  .primaryColor),
-                                                    ),
-                                                    onPressed: () =>
-                                                        Navigator.pop(context),
-                                                    child: const Text('No')),
-                                                TextButton(
-                                                    style: const ButtonStyle(
-                                                      foregroundColor:
-                                                          WidgetStatePropertyAll(
-                                                              ColorConst
-                                                                  .backgroundColor),
+                                            ),
+                                          ),
+                                          SizedBox(height: h * 0.01),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: Text(
+                                              '${drivers[index].totalTrips.toString()} / ${drivers[index].targetTrips.toString()} trips',
+                                              style: const TextStyle(
+                                                color: Colors.grey,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : const Text('Driver have been blocked'),
+                              trailing: PopupMenuButton(
+                                color: ColorConst.boxColor,
+                                child: const Icon(
+                                  Icons.more_vert_rounded,
+                                  color: ColorConst.textColor,
+                                ),
+                                itemBuilder: (context) {
+                                  return [
+                                    if (drivers[index].isBlocked.isEmpty)
+                                      PopupMenuItem(
+                                          onTap: () => _showDriverForm(
+                                              driver: drivers[index]),
+                                          child: const Text(
+                                            'Edit',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: ColorConst.textColor),
+                                          )),
+                                    PopupMenuItem(
+                                        onTap: () async {
+                                          TextEditingController
+                                              reasonController =
+                                              TextEditingController(
+                                                  text:
+                                                      drivers[index].isBlocked);
+                                          showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                    backgroundColor:
+                                                        ColorConst.boxColor,
+                                                    title: Text(
+                                                        drivers[index]
+                                                                .isBlocked
+                                                                .isEmpty
+                                                            ? 'Block driver?'
+                                                            : 'Ublock driver?',
+                                                        style: const TextStyle(
+                                                            color: ColorConst
+                                                                .textColor)),
+                                                    content:
+                                                        drivers[index]
+                                                                .isBlocked
+                                                                .isEmpty
+                                                            ? TextField(
+                                                                controller:
+                                                                    reasonController,
+                                                                style: const TextStyle(
+                                                                    color: ColorConst
+                                                                        .textColor),
+                                                                decoration:
+                                                                    const InputDecoration(
+                                                                        border:
+                                                                            OutlineInputBorder(),
+                                                                        focusedBorder:
+                                                                            OutlineInputBorder(
+                                                                          borderSide:
+                                                                              BorderSide(color: ColorConst.primaryColor),
+                                                                        ),
+                                                                        filled:
+                                                                            true,
+                                                                        fillColor: ColorConst
+                                                                            .boxColor,
+                                                                        labelStyle: TextStyle(
+                                                                            color: ColorConst
+                                                                                .textColor),
+                                                                        labelText:
+                                                                            'Reason'),
+                                                              )
+                                                            : Text(
+                                                                'Reason : ${drivers[index].isBlocked}',
+                                                                style: const TextStyle(
+                                                                    color: ColorConst
+                                                                        .textColor,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold),
+                                                              ),
+                                                    actions: [
+                                                      TextButton(
+                                                          style:
+                                                              const ButtonStyle(
+                                                            side: WidgetStatePropertyAll(
+                                                                BorderSide(
+                                                                    color: ColorConst
+                                                                        .primaryColor)),
+                                                            foregroundColor:
+                                                                WidgetStatePropertyAll(
+                                                                    ColorConst
+                                                                        .primaryColor),
+                                                          ),
+                                                          onPressed: () =>
+                                                              Navigator.pop(
+                                                                  context),
+                                                          child:
+                                                              const Text('No')),
+                                                      TextButton(
+                                                          style:
+                                                              const ButtonStyle(
+                                                            foregroundColor:
+                                                                WidgetStatePropertyAll(
+                                                                    ColorConst
+                                                                        .backgroundColor),
+                                                            backgroundColor:
+                                                                WidgetStatePropertyAll(
+                                                                    ColorConst
+                                                                        .primaryColor),
+                                                          ),
+                                                          onPressed: () async {
+                                                            if (reasonController
+                                                                .text
+                                                                .isNotEmpty) {
+                                                              await FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'users')
+                                                                  .doc(drivers[
+                                                                          index]
+                                                                      .driverId)
+                                                                  .update({
+                                                                'organisation_id':
+                                                                    '',
+                                                                'organisation_name':
+                                                                    '',
+                                                                'status': drivers[
+                                                                            index]
+                                                                        .isBlocked
+                                                                        .isEmpty
+                                                                    ? 'BLOCKED'
+                                                                    : 'ACTIVE',
+                                                                'is_blocked': drivers[
+                                                                            index]
+                                                                        .isBlocked
+                                                                        .isEmpty
+                                                                    ? reasonController
+                                                                        .text
+                                                                    : ''
+                                                              });
+                                                              await FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'organisations')
+                                                                  .doc(currentUser!
+                                                                      .organisationId)
+                                                                  .collection(
+                                                                      'drivers')
+                                                                  .doc(drivers[
+                                                                          index]
+                                                                      .driverId)
+                                                                  .update({
+                                                                'is_blocked': drivers[
+                                                                            index]
+                                                                        .isBlocked
+                                                                        .isEmpty
+                                                                    ? reasonController
+                                                                        .text
+                                                                    : ''
+                                                              });
+                                                              Fluttertoast.showToast(
+                                                                  msg: drivers[
+                                                                              index]
+                                                                          .isBlocked
+                                                                          .isEmpty
+                                                                      ? 'Driver blocked!'
+                                                                      : 'Driver unblocked');
+                                                              Navigator.pop(
+                                                                  context);
+                                                              getDrivers();
+                                                            } else {
+                                                              Fluttertoast.showToast(
+                                                                  msg:
+                                                                      'Enter the reason!',
+                                                                  toastLength: Toast
+                                                                      .LENGTH_SHORT);
+                                                            }
+                                                          },
+                                                          child: const Text(
+                                                              'Yes')),
+                                                    ],
+                                                  ));
+                                        },
+                                        child: Text(
+                                            drivers[index].isBlocked.isEmpty
+                                                ? 'Block'
+                                                : 'Unblock',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                color: drivers[index]
+                                                        .isBlocked
+                                                        .isEmpty
+                                                    ? ColorConst.textColor
+                                                    : ColorConst.errorColor))),
+                                    if (drivers[index].isBlocked.isEmpty)
+                                      PopupMenuItem(
+                                          onTap: () async {
+                                            showDialog(
+                                                context: context,
+                                                builder: (context) =>
+                                                    AlertDialog(
                                                       backgroundColor:
-                                                          WidgetStatePropertyAll(
-                                                              ColorConst
-                                                                  .primaryColor),
-                                                    ),
-                                                    onPressed: () async {
-                                                      await FirebaseFirestore
-                                                          .instance
-                                                          .collection('users')
-                                                          .doc(drivers[index]
-                                                              .userId)
-                                                          .update({
-                                                        'organisation_id': '',
-                                                        'organisation_name': ''
-                                                      });
-                                                      await FirebaseFirestore
-                                                          .instance
-                                                          .collection(
-                                                              'organisations')
-                                                          .doc(currentUser!
-                                                              .organisationId)
-                                                          .collection('drivers')
-                                                          .doc(drivers[index]
-                                                              .userId)
-                                                          .update({
-                                                        'is_removed': true
-                                                      });
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: const Text('Yes')),
-                                              ],
-                                            ));
-                                  },
-                                  child: const Text('Remove',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          color: ColorConst.textColor))),
-                            ];
-                          },
-                        )),
-                  );
+                                                          ColorConst.boxColor,
+                                                      title: const Text(
+                                                          'Remove driver?',
+                                                          style: TextStyle(
+                                                              color: ColorConst
+                                                                  .textColor)),
+                                                      content: const Text(
+                                                        'Are you sure you want to remove this driver?',
+                                                        style: TextStyle(
+                                                            color: ColorConst
+                                                                .textColor),
+                                                      ),
+                                                      actions: [
+                                                        TextButton(
+                                                            style:
+                                                                const ButtonStyle(
+                                                              foregroundColor:
+                                                                  WidgetStatePropertyAll(
+                                                                      ColorConst
+                                                                          .primaryColor),
+                                                            ),
+                                                            onPressed: () =>
+                                                                Navigator.pop(
+                                                                    context),
+                                                            child: const Text(
+                                                                'No')),
+                                                        TextButton(
+                                                            style:
+                                                                const ButtonStyle(
+                                                              foregroundColor:
+                                                                  WidgetStatePropertyAll(
+                                                                      ColorConst
+                                                                          .backgroundColor),
+                                                              backgroundColor:
+                                                                  WidgetStatePropertyAll(
+                                                                      ColorConst
+                                                                          .primaryColor),
+                                                            ),
+                                                            onPressed:
+                                                                () async {
+                                                              await FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'users')
+                                                                  .doc(drivers[
+                                                                          index]
+                                                                      .driverId)
+                                                                  .update({
+                                                                'organisation_id':
+                                                                    '',
+                                                                'organisation_name':
+                                                                    '',
+                                                                'status':
+                                                                    'LEFT_COMPANY'
+                                                              });
+                                                              await FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'organisations')
+                                                                  .doc(currentUser!
+                                                                      .organisationId)
+                                                                  .collection(
+                                                                      'drivers')
+                                                                  .doc(drivers[
+                                                                          index]
+                                                                      .driverId)
+                                                                  .update({
+                                                                'is_deleted':
+                                                                    true
+                                                              });
+                                                              Fluttertoast.showToast(
+                                                                  msg:
+                                                                      'Driver have been removed!',
+                                                                  toastLength: Toast
+                                                                      .LENGTH_SHORT,
+                                                                  gravity:
+                                                                      ToastGravity
+                                                                          .TOP_LEFT);
+                                                              Navigator.pop(
+                                                                  context);
+                                                              getDrivers();
+                                                            },
+                                                            child: const Text(
+                                                                'Yes')),
+                                                      ],
+                                                    ));
+                                          },
+                                          child: const Text('Remove',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color:
+                                                      ColorConst.textColor))),
+                                  ];
+                                },
+                              )),
+                          collapsed: const SizedBox(),
+                          expanded: Column(
+                            children: [
+                              _textRow(
+                                  label: 'Mobile number',
+                                  value: drivers[index].mobileNumber),
+                              _textRow(
+                                  label: 'Total Earnings',
+                                  value: drivers[index]
+                                      .totalEarnings
+                                      .toStringAsFixed(2)),
+                              _textRow(
+                                  label: 'Total cash collected',
+                                  value: drivers[index]
+                                      .cashCollected
+                                      .toStringAsFixed(2)),
+                              _textRow(
+                                  label: 'Total duties',
+                                  value: drivers[index].totalShifts.toString()),
+                              _textRow(
+                                  label: 'Joined on',
+                                  value: DateFormat('dd-MM-yyyy').format(
+                                      DateTime.parse(
+                                          drivers[index].driverAddedOn))),
+                            ],
+                          )));
                 });
   }
 
@@ -372,10 +613,10 @@ class _DriversPageState extends State<DriversPage> {
     );
   }
 
-  void _showDriverForm({UserModel? driver}) {
+  void _showDriverForm({DriverModel? driver}) {
     final isEditing = driver != null;
     final nameController =
-        TextEditingController(text: isEditing ? driver.userName : '');
+        TextEditingController(text: isEditing ? driver.driverName : '');
     final phoneController = TextEditingController(
         text: isEditing ? driver.mobileNumber.substring(3) : '');
     final walletController =
@@ -436,6 +677,7 @@ class _DriversPageState extends State<DriversPage> {
                       keyboardType: TextInputType.name,
                       textCapitalization: TextCapitalization.words,
                       autovalidateMode: AutovalidateMode.onUnfocus,
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return "Please enter driver's name";
@@ -467,6 +709,7 @@ class _DriversPageState extends State<DriversPage> {
                       style: const TextStyle(color: ColorConst.textColor),
                       keyboardType: TextInputType.number,
                       autovalidateMode: AutovalidateMode.onUnfocus,
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null ||
                             value.isEmpty ||
@@ -483,8 +726,10 @@ class _DriversPageState extends State<DriversPage> {
                         hintText: 'Advance amount',
                         prefixIcon: Padding(
                           padding: EdgeInsets.all(w * 0.05),
-                          child: const Text('₹',
-                              style: TextStyle(color: ColorConst.primaryColor)),
+                          child: Text('₹',
+                              style: TextStyle(
+                                  color: ColorConst.primaryColor,
+                                  fontSize: w * 0.06)),
                         ),
                         border: const OutlineInputBorder(),
                         focusedBorder: const OutlineInputBorder(
@@ -497,6 +742,7 @@ class _DriversPageState extends State<DriversPage> {
                       ),
                       style: const TextStyle(color: ColorConst.textColor),
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -506,9 +752,10 @@ class _DriversPageState extends State<DriversPage> {
                         prefixIcon: Padding(
                             padding: EdgeInsets.all(w * 0.05),
                             child: const Icon(
-                              Icons.trending_up_rounded,
+                              Icons.info_outline,
                               color: ColorConst.primaryColor,
                             )),
+                        suffixText: '/week',
                         border: const OutlineInputBorder(),
                         focusedBorder: const OutlineInputBorder(
                           borderSide:
@@ -520,6 +767,7 @@ class _DriversPageState extends State<DriversPage> {
                       ),
                       style: const TextStyle(color: ColorConst.textColor),
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -551,20 +799,32 @@ class _DriversPageState extends State<DriversPage> {
                                     if (isEditing) {
                                       await FirebaseFirestore.instance
                                           .collection('users')
-                                          .doc(driver.userId)
+                                          .doc(driver.driverId)
+                                          .update({
+                                        'user_name': nameController.text.trim(),
+                                        'mobile_number':
+                                            '+91${phoneController.text}'
+                                      });
+                                      await FirebaseFirestore.instance
+                                          .collection('organisations')
+                                          .doc(currentUser!.organisationId)
+                                          .collection('drivers')
+                                          .doc(driver.driverId)
                                           .update({
                                         'user_name': nameController.text.trim(),
                                         'mobile_number':
                                             '+91${phoneController.text}',
-                                        'wallet':
-                                            double.parse(walletController.text),
+                                        'wallet': FieldValue.increment(
+                                            double.parse(
+                                                walletController.text)),
                                         'target_trips': int.parse(
                                             targetTripsController.text)
                                       });
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                              content: Text(
-                                                  'Details updated successfully!')));
+                                      Fluttertoast.showToast(
+                                        msg: "Details updated successfully!",
+                                        toastLength: Toast.LENGTH_SHORT,
+                                        gravity: ToastGravity.TOP,
+                                      );
                                       setState(() {
                                         isLoading = false;
                                       });
@@ -582,6 +842,7 @@ class _DriversPageState extends State<DriversPage> {
                                         print('MOBILE NUMBER ALREADY EXIST');
                                         if (data
                                             .first['organisation_id'].isEmpty) {
+                                          //TODO: Check this with status
                                           print('ORGANISATION ID IS EMPTY');
                                           await FirebaseFirestore.instance
                                               .collection('users')
@@ -592,39 +853,67 @@ class _DriversPageState extends State<DriversPage> {
                                             'user_role': 'Driver',
                                             'user_name':
                                                 nameController.text.trim(),
-                                            'status': 'ACTIVE',
-                                            'target_trips': int.parse(
-                                                targetTripsController.text),
-                                            'wallet': double.parse(
-                                                walletController.text)
+                                            'status': 'JOINED',
                                           });
                                           await FirebaseFirestore.instance
                                               .collection('organisations')
                                               .doc(currentUser!.organisationId)
                                               .collection('drivers')
                                               .doc(data.first['user_id'])
-                                              .set({
-                                            'organisation_id':
-                                                currentUser!.organisationId,
-                                            'user_id': data.first['user_id'],
-                                            'joined_on': DateTime.now(),
-                                            'is_removed': false
-                                          });
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(const SnackBar(
-                                                  content: Text(
-                                                      'Driver registered successfully!')));
+                                              .set(DriverModel(
+                                                      isDeleted: false,
+                                                      totalTrips: 0,
+                                                      totalEarnings: 0,
+                                                      cashCollected: 0,
+                                                      refund: 0,
+                                                      wallet: double.parse(
+                                                          walletController
+                                                              .text),
+                                                      onRent: '',
+                                                      driverName: nameController
+                                                          .text
+                                                          .trim(),
+                                                      mobileNumber:
+                                                          '+91${phoneController.text}',
+                                                      status: 'ACTIVE',
+                                                      driverId:
+                                                          data.first['user_id'],
+                                                      isBlocked: '',
+                                                      organisationId: currentUser!
+                                                          .organisationId,
+                                                      targetTrips: int.parse(
+                                                          targetTripsController
+                                                              .text),
+                                                      totalShifts: 0,
+                                                      organisationName:
+                                                          currentUser!
+                                                              .organisationName,
+                                                      driverAddedOn:
+                                                          DateTime.now()
+                                                              .toString(),
+                                                      vehicleRent: 0)
+                                                  .toJson());
+                                          Fluttertoast.showToast(
+                                            msg:
+                                                "Driver registered successfully!",
+                                            toastLength: Toast.LENGTH_SHORT,
+                                            gravity: ToastGravity.TOP,
+                                          );
+                                          Navigator.pop(context);
                                           await getDrivers();
                                         } else {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(const SnackBar(
-                                                  content: Text(
-                                                      'User is already working in other Organisation!')));
+                                          Fluttertoast.showToast(
+                                            msg:
+                                                "User is already registered in other organization!",
+                                            toastLength: Toast.LENGTH_SHORT,
+                                            gravity: ToastGravity.TOP,
+                                          );
                                         }
                                         setState(() {
                                           isLoading = false;
                                         });
                                       } else {
+                                        print('MOBILE NUMBER NOT EXIST');
                                         String userId = 'zer0user${users.size}';
                                         await FirebaseFirestore.instance
                                             .collection('users')
@@ -645,6 +934,30 @@ class _DriversPageState extends State<DriversPage> {
                                                     userName: nameController
                                                         .text
                                                         .trim(),
+                                                    isDeleted: false,
+                                                    status: 'JOINED',
+                                                    isBlocked: '')
+                                                .toJson());
+                                        await FirebaseFirestore.instance
+                                            .collection('organisations')
+                                            .doc(currentUser!.organisationId)
+                                            .collection('drivers')
+                                            .doc(userId)
+                                            .set(DriverModel(
+                                                    mobileNumber:
+                                                        '+91${phoneController.text}',
+                                                    organisationId: currentUser!
+                                                        .organisationId,
+                                                    organisationName:
+                                                        currentUser!
+                                                            .organisationName,
+                                                    driverAddedOn:
+                                                        DateTime.now()
+                                                            .toString(),
+                                                    driverId: userId,
+                                                    driverName: nameController
+                                                        .text
+                                                        .trim(),
                                                     isBlocked: '',
                                                     isDeleted: false,
                                                     status: 'ACTIVE',
@@ -659,34 +972,31 @@ class _DriversPageState extends State<DriversPage> {
                                                     totalEarnings: 0,
                                                     totalShifts: 0,
                                                     totalTrips: 0,
-                                                    wallet: 0)
+                                                    wallet: 0,
+                                                    cashCollected: 0,
+                                                    refund: 0,
+                                                    vehicleRent: 0)
                                                 .toJson());
-                                        await FirebaseFirestore.instance
-                                            .collection('organisations')
-                                            .doc(currentUser!.organisationId)
-                                            .collection('drivers')
-                                            .doc(userId)
-                                            .set({
-                                          'organisation_id':
-                                              currentUser!.organisationId,
-                                          'user_id': userId,
-                                        });
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(const SnackBar(
-                                                content: Text(
-                                                    'Driver registered successfully!')));
+                                        Fluttertoast.showToast(
+                                          msg:
+                                              "Driver registered successfully!",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.TOP,
+                                        );
+
                                         setState(() {
                                           isLoading = false;
                                         });
-                                        await getDrivers();
                                         Navigator.pop(context);
+                                        await getDrivers();
                                       }
                                     }
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                'Enter required details!')));
+                                    Fluttertoast.showToast(
+                                      msg: "Enter required details!",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.TOP,
+                                    );
                                   }
                                 },
                                 child: Text(

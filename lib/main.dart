@@ -11,6 +11,7 @@ import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:zero/driverPages/driver_bottom_page.dart';
+import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/user_model.dart';
 import 'firebase_options.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
           textTheme: GoogleFonts.manropeTextTheme(),
           useMaterial3: true,
         ),
-        home: SplashScreen(),
+        home: const SplashScreen(),
       ),
     );
   }
@@ -63,33 +64,58 @@ class _SplashScreenState extends State<SplashScreen> {
     _initializeApp();
   }
 
-  // addAdmin() async {
-  //   // await FirebaseFirestore.instance.collection('users').doc('zer0user1').set({
-  //   //   'is_blocked': '',
-  //   //   'is_deleted': false,
-  //   //   'mobile_number': '+919487022519',
-  //   //   'organisation_id': 'N5DGSiAVziV3dOtuuewi',
-  //   //   'organisation_name': 'Zero uber',
-  //   //   'status': 'ACTIVE',
-  //   //   'user_created_on': DateTime.now().toString(),
-  //   //   'user_id': 'zer0user1',
-  //   //   'user_name': 'Fazil naz Kolambil',
-  //   //   'user_role': 'ADMIN'
-  //   // });
-  //   try {
-  //     var user = await FirebaseFirestore.instance
-  //         .collection('users')
-  //         .doc('zer0user1')
-  //         .get();
-  //     currentUser = UserModel.fromJson(user.data() as Map<String, dynamic>);
-  //     log(currentUser!.toJson().toString());
-  //     SharedPreferences prefs = await SharedPreferences.getInstance();
-  //     prefs.setBool('isLogged', true);
-  //     prefs.setString('currentUser', json.encode(user.data()));
-  //   } catch (e) {
-  //     print(e);
-  //   }
-  // }
+  addAdmin() async {
+    await FirebaseFirestore.instance
+        .collection('organisations')
+        .doc('N5DGSiAVziV3dOtuuewi')
+        .collection('drivers')
+        .doc("zer0user0")
+        .set(DriverModel(
+                isDeleted: false,
+                totalTrips: 0,
+                totalEarnings: 0,
+                cashCollected: 0,
+                refund: 0,
+                wallet: 0,
+                onRent: '',
+                driverName: 'Fazil naz Kolambil',
+                mobileNumber: '+919487022519',
+                status: 'ACTIVE',
+                driverId: 'zer0user0',
+                isBlocked: '',
+                organisationId: 'N5DGSiAVziV3dOtuuewi',
+                targetTrips: 70,
+                totalShifts: 0,
+                organisationName: 'Zero uber',
+                driverAddedOn: '2025-04-07 18:48:59.601390',
+                vehicleRent: 0)
+            .toJson());
+    // await FirebaseFirestore.instance.collection('users').doc('zer0user1').set({
+    //   'is_blocked': '',
+    //   'is_deleted': false,
+    //   'mobile_number': '+919487022519',
+    //   'organisation_id': 'N5DGSiAVziV3dOtuuewi',
+    //   'organisation_name': 'Zero uber',
+    //   'status': 'ACTIVE',
+    //   'user_created_on': DateTime.now().toString(),
+    //   'user_id': 'zer0user1',
+    //   'user_name': 'Fazil naz Kolambil',
+    //   'user_role': 'ADMIN'
+    // });
+    // try {
+    //   var user = await FirebaseFirestore.instance
+    //       .collection('users')
+    //       .doc('zer0user1')
+    //       .get();
+    //   currentUser = UserModel2.fromJson(user.data() as Map<String, dynamic>);
+    //   log(currentUser!.toJson().toString());
+    //   SharedPreferences prefs = await SharedPreferences.getInstance();
+    //   prefs.setBool('isLogged', true);
+    //   prefs.setString('currentUser', json.encode(user.data()));
+    // } catch (e) {
+    //   print(e);
+    // }
+  }
 
   Future<void> _initializeApp() async {
     await Future.delayed(const Duration(milliseconds: 1500));
@@ -100,6 +126,7 @@ class _SplashScreenState extends State<SplashScreen> {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       bool isLoggedIn = prefs.getBool('isLogged') ?? false;
+      bool isDriving = prefs.getBool('isDriving') ?? false;
       if (isLoggedIn) {
         String? userJson = prefs.getString('currentUser');
         if (userJson != null && userJson.isNotEmpty) {
@@ -107,8 +134,12 @@ class _SplashScreenState extends State<SplashScreen> {
             Map<String, dynamic> userData = json.decode(userJson);
             currentUser = UserModel.fromJson(userData);
             if (currentUser!.userRole.toUpperCase() == 'ADMIN') {
-              _navigateTo(const AdminBottomBar());
+              _navigateTo(
+                  isDriving ? const DriverBottomBar() : const AdminBottomBar());
             } else {
+              String? driverJson = prefs.getString('driverModel');
+              Map<String, dynamic> driverData = json.decode(driverJson!);
+              currentDriver = DriverModel.fromJson(driverData);
               _navigateTo(const DriverBottomBar());
             }
           } catch (e) {

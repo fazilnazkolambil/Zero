@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pinput/pinput.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zero/adminPages/screens/admin_bottom_page.dart';
@@ -41,44 +42,6 @@ class _AuthPageState extends State<AuthPage> {
   bool _canResendOTP = false;
   int _resendCountdown = 0;
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   checkLoggedInStatus();
-  // }
-
-  // Future<void> checkLoggedInStatus() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   bool isLoggedIn = prefs.getBool('isLogged') ?? false;
-  //   if (isLoggedIn) {
-  //     String? userJson = prefs.getString('currentUser');
-  //     if (userJson != null && userJson.isNotEmpty) {
-  //       try {
-  //         Map<String, dynamic> userData = json.decode(userJson);
-  //         currentUser = UserModel.fromJson(userData);
-
-  //         // Add a small delay to allow the app to initialize properly
-  //         await Future.delayed(Duration(milliseconds: 500));
-
-  //         if (currentUser!.userRole.toUpperCase() == 'ADMIN') {
-  //           Navigator.pushReplacement(
-  //             context,
-  //             CupertinoPageRoute(builder: (context) => AdminBottomBar()),
-  //           );
-  //         } else {
-  //           Navigator.pushReplacement(
-  //             context,
-  //             CupertinoPageRoute(builder: (context) => DriverBottomBar()),
-  //           );
-  //         }
-  //       } catch (e) {
-  //         // Invalid user data in preferences, clear and continue with login
-  //         await prefs.clear();
-  //       }
-  //     }
-  //   }
-  // }
-
   void verifyPhoneNumber(String mobileNumber) async {
     try {
       setState(() {
@@ -88,10 +51,9 @@ class _AuthPageState extends State<AuthPage> {
 
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: mobileNumber,
-        timeout: Duration(seconds: 60),
+        timeout: const Duration(seconds: 60),
         forceResendingToken: _resendToken,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          // Auto-verification completed (usually on Android)
           await _signInWithCredential(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
@@ -106,14 +68,15 @@ class _AuthPageState extends State<AuthPage> {
             _resendToken = resendToken;
             _authState = AuthState.otpSent;
             _canResendOTP = false;
-            _resendCountdown = 30; // 30 seconds cooldown
+            _resendCountdown = 30;
           });
 
-          // Start countdown for resend button
           _startResendTimer();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("OTP sent successfully!")));
+          Fluttertoast.showToast(
+            msg: "OTP sent successfully!",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.TOP,
+          );
         },
         codeAutoRetrievalTimeout: (String verificationId) {
           // Auto-retrieval timeout
@@ -133,7 +96,7 @@ class _AuthPageState extends State<AuthPage> {
   }
 
   void _startResendTimer() {
-    Future.delayed(Duration(seconds: 1), () {
+    Future.delayed(const Duration(seconds: 1), () {
       if (mounted && _resendCountdown > 0) {
         setState(() {
           _resendCountdown--;
@@ -149,8 +112,11 @@ class _AuthPageState extends State<AuthPage> {
 
   void verifyOTP(String otp) async {
     if (otp.length != 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please enter a valid 6-digit OTP")));
+      Fluttertoast.showToast(
+        msg: "Please enter a valid 6-digit OTP",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+      );
       return;
     }
 
