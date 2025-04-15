@@ -152,7 +152,7 @@ class _OrganisationPageState extends State<OrganisationPage> {
             SizedBox(
               height: h * 0.02,
             ),
-            _buildTextRow('Current Plan', widget.organisation.fleet.plan),
+            // _buildTextRow('Current Plan', widget.organisation.fleet.plan),
             _buildTextRow('Insurance',
                 widget.organisation.fleet.planWagonr.insurance.toString()),
             Padding(

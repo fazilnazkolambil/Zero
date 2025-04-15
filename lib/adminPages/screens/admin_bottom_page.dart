@@ -26,24 +26,25 @@ class AdminBottomBar extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<AdminBottomBar> {
-  Map<String, dynamic> fleet = {};
-  bool isLoading = false;
-  OrganisationModel? organisationModel;
-  Future getOrganisation() async {
-    setState(() {
-      isLoading = true;
-    });
-    var organisations = await FirebaseFirestore.instance
-        .collection('organisations')
-        .doc(currentUser!.organisationId)
-        .get();
-    setState(() {
-      fleet = organisations.data()!['fleet'];
-      organisationModel = OrganisationModel.fromJson(
-          organisations.data() as Map<String, dynamic>);
-      isLoading = false;
-    });
-  }
+  // Map<String, dynamic> fleet = {};
+  // bool isLoading = false;
+  // OrganisationModel? organisationModel;
+  // Future getOrganisation() async {
+  //   setState(() {
+  //     isLoading = true;
+  //   });
+  //   var organisations = await FirebaseFirestore.instance
+  //       .collection('organisations')
+  //       .doc(currentUser!.organisationId)
+  //       .get();
+  //   setState(() {
+  //     fleet = organisations.data()!['fleet'];
+  //     organisationModel = OrganisationModel.fromJson(
+  //         organisations.data() as Map<String, dynamic>);
+  //     log(organisationModel!.toJson().toString());
+  //     isLoading = false;
+  //   });
+  // }
 
   int selectedIndex = 0;
   void onItemTapped(int index) {
@@ -52,25 +53,25 @@ class _MyHomePageState extends State<AdminBottomBar> {
     });
   }
 
-  @override
-  void initState() {
-    getOrganisation();
-    super.initState();
-  }
+  // @override
+  // void initState() {
+  //   getOrganisation();
+  //   super.initState();
+  // }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading || organisationModel == null) {
-      return const Center(
-          child: CupertinoActivityIndicator(
-        color: ColorConst.primaryColor,
-      ));
-    }
+    // if (isLoading || organisationModel == null) {
+    //   return const Center(
+    //       child: CupertinoActivityIndicator(
+    //     color: ColorConst.primaryColor,
+    //   ));
+    // }
     final List<Widget> bottomBarPages = [
-      AdminDashboard(fleet: fleet),
+      const AdminDashboard(),
       const VehiclesPage(),
       const DriversPage(),
-      OrganisationPage(organisation: organisationModel!)
+      const OrganisationPage()
       // const DriverBottomBar()
     ];
     return Scaffold(

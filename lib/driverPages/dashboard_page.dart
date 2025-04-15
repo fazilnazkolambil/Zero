@@ -8,7 +8,7 @@ import 'package:expandable/expandable.dart';
 import 'package:zero/models/rent_model.dart';
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+  const DashboardPage({super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -32,7 +32,7 @@ class _DashboardPageState extends State<DashboardPage> {
         .collection('organisations')
         .doc(currentUser!.organisationId)
         .collection('rents')
-        .where('rent_status', isEqualTo: 'completed')
+        .where('rent_status', isEqualTo: 'COMPLETED')
         .where('driver_id', isEqualTo: currentUser!.userId)
         .where('start_time',
             isGreaterThanOrEqualTo: Timestamp.fromDate(weekStart))
@@ -92,7 +92,7 @@ class _DashboardPageState extends State<DashboardPage> {
             : rentModels.isEmpty
                 ? const Center(
                     child: Text(
-                    'You were on Leave!',
+                    'No duties this week!',
                     style: TextStyle(
                         color: ColorConst.textColor,
                         fontWeight: FontWeight.bold),
@@ -103,6 +103,8 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          tripCompletiontracking(),
+                          SizedBox(height: h * 0.02),
                           tripStats(),
                           SizedBox(height: h * 0.02),
                           stateBreakdown(),
@@ -165,20 +167,81 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Widget tripCompletiontracking() {
+    int totalTrips = rentModels.fold(0, (trips, a) => trips + a.totalTrips);
+    final tripCompletion = totalTrips /
+        (currentDriver!.targetTrips > 0 ? currentDriver!.targetTrips : 1);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ColorConst.boxColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.trending_up_rounded,
+                  color: ColorConst.textColor),
+              SizedBox(width: w * 0.03),
+              const Text(
+                'Trip completion',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: ColorConst.textColor,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: h * 0.02),
+          Padding(
+            padding: EdgeInsets.only(top: h * 0.01),
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: tripCompletion > 1 ? 1 : tripCompletion,
+                    minHeight: 5,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      tripCompletion >= 1
+                          ? ColorConst.successColor
+                          : ColorConst.errorColor,
+                    ),
+                  ),
+                ),
+                SizedBox(height: h * 0.01),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${totalTrips.toString()} / ${currentDriver!.targetTrips.toString()} trips',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget tripStats() {
     int totalShifts = rentModels.fold(0, (shift, a) => shift + a.selectedShift);
     int totalTrips = rentModels.fold(0, (trips, a) => trips + a.totalTrips);
+    double totalRent = rentModels
+        .map((e) => e.selectedShift * e.vehicleRent)
+        .reduce((rent, element) => rent + element);
+    double fuelExpenses =
+        rentModels.fold(0, (fuelExpenses, a) => fuelExpenses + a.fuelExpense!);
     double totalEarnings =
         rentModels.fold(0, (earnings, a) => earnings + a.totalEarnings);
-    // double totalRefund = rentModels.fold(0, (refund, a) => refund + a.refund);
-    // double totalCashCollected = rentModels.fold(
-    //     0, (cashCollected, a) => cashCollected + a.cashCollected);
-    // double totalRent = rentModels
-    //     .map((item) => item.selectedShift * item.vehicleRent)
-    //     .reduce((rent, element) => rent + element);
-    // double yourEarnings = totalEarnings + totalRefund;
-    double totaltoPay =
-        rentModels.fold(0, (totaltoPay, a) => totaltoPay - a.totaltoPay);
+    double balance = totalEarnings - fuelExpenses - totalRent;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -190,10 +253,10 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           Row(
             children: [
-              const Icon(Icons.insert_chart, color: ColorConst.textColor),
+              const Icon(Icons.bar_chart_rounded, color: ColorConst.textColor),
               SizedBox(width: w * 0.03),
               const Text(
-                'Stats',
+                'Your earnings',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -217,7 +280,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   SizedBox(height: w * 0.03),
                   const Text(
-                    'Total shifts',
+                    'Total duties',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -255,7 +318,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   SizedBox(height: w * 0.03),
                   const Text(
-                    'Your earnings',
+                    'Total earnings',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -266,24 +329,67 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           SizedBox(height: h * 0.03),
-          Column(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                totaltoPay.toStringAsFixed(2),
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: totaltoPay > 0
-                        ? ColorConst.successColor
-                        : ColorConst.errorColor),
+              Column(
+                children: [
+                  Text(
+                    totalRent.toStringAsFixed(2),
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: ColorConst.errorColor),
+                  ),
+                  SizedBox(height: w * 0.03),
+                  const Text(
+                    'Total rent',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: w * 0.03),
-              const Text(
-                'Total to pay',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
-                ),
+              Column(
+                children: [
+                  Text(
+                    fuelExpenses.toStringAsFixed(2),
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: ColorConst.errorColor),
+                  ),
+                  SizedBox(height: w * 0.03),
+                  const Text(
+                    'Fuel expenses',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    balance.toStringAsFixed(2),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: balance >= 0
+                            ? ColorConst.successColor
+                            : ColorConst.errorColor),
+                  ),
+                  SizedBox(height: w * 0.03),
+                  const Text(
+                    'Balance',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -304,11 +410,11 @@ class _DashboardPageState extends State<DashboardPage> {
           children: [
             Row(
               children: [
-                const Icon(Icons.bar_chart_rounded,
+                const Icon(Icons.account_balance_wallet_outlined,
                     color: ColorConst.textColor),
                 SizedBox(width: w * 0.03),
                 const Text(
-                  'Breakdown',
+                  'Rent details',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -336,12 +442,11 @@ class _DashboardPageState extends State<DashboardPage> {
     double toPay = balance - totalRent;
     return Column(
       children: [
-        _breakdown(
+        _textRow(
             label: 'Total earnings',
             value: '₹ ${totalEarnings.toStringAsFixed(2)}'),
-        _breakdown(
-            label: 'Refund', value: '₹ ${totalRefund.toStringAsFixed(2)}'),
-        _breakdown(
+        _textRow(label: 'Refund', value: '₹ ${totalRefund.toStringAsFixed(2)}'),
+        _textRow(
             label: 'Cash collected',
             value: '₹ ${totalCashCollected.toStringAsFixed(2)}'),
         const Divider(color: Colors.grey),
@@ -367,21 +472,21 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
         ),
-        _breakdown(
+        _textRow(
             label: 'Vehicle rent', value: '-${totalRent.toStringAsFixed(2)}'),
         Divider(),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Total to pay',
+              'Total balance',
               style: TextStyle(
                   color: ColorConst.textColor,
                   fontSize: w * 0.045,
                   fontWeight: FontWeight.w600),
             ),
             Text(
-              '₹ ${toPay.toStringAsFixed(2)}',
+              '₹ ${(-toPay).toStringAsFixed(2)}',
               style: TextStyle(
                   color: toPay > 0
                       ? ColorConst.successColor
@@ -392,28 +497,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ],
-    );
-  }
-
-  _breakdown({required String label, required String value}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: w * 0.02, vertical: w * 0.03),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.grey,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-                color: ColorConst.textColor, fontWeight: FontWeight.bold),
-          )
-        ],
-      ),
     );
   }
 
@@ -429,8 +512,7 @@ class _DashboardPageState extends State<DashboardPage> {
               padding: EdgeInsets.only(top: w * 0.05, left: w * 0.03),
               child: Row(
                 children: [
-                  const Icon(Icons.trending_up_rounded,
-                      color: ColorConst.textColor),
+                  const Icon(Icons.car_rental, color: ColorConst.textColor),
                   SizedBox(width: w * 0.03),
                   const Text(
                     'Weekly activity',
@@ -444,6 +526,7 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             ListView.separated(
+              padding: EdgeInsets.only(top: h * 0.02),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: rentModels.length,
@@ -514,28 +597,33 @@ class _DashboardPageState extends State<DashboardPage> {
                     padding: EdgeInsets.all(w * 0.03),
                     child: Column(
                       children: [
-                        _breakdown(
+                        _textRow(
                             label: 'Total shift',
                             value: rentModels[index].selectedShift.toString()),
-                        _breakdown(
+                        _textRow(
                             label: 'Total earnings',
                             value: rentModels[index]
                                 .totalEarnings
                                 .toStringAsFixed(2)),
-                        _breakdown(
+                        _textRow(
                             label: 'Refund',
                             value: rentModels[index].refund.toStringAsFixed(2)),
-                        _breakdown(
+                        _textRow(
                             label: 'Cash collected',
                             value: rentModels[index]
                                 .cashCollected
                                 .toStringAsFixed(2)),
-                        _breakdown(
+                        _textRow(
+                            label: 'Fuel expense',
+                            value: rentModels[index]
+                                .fuelExpense!
+                                .toStringAsFixed(2)),
+                        _textRow(
                             label: 'Vehicle rent',
                             value: (rentModels[index].selectedShift *
                                     rentModels[index].vehicleRent)
                                 .toStringAsFixed(2)),
-                        _breakdown(
+                        _textRow(
                             label: 'To pay',
                             value: (rentModels[index].totaltoPay)
                                 .toStringAsFixed(2)),
@@ -550,5 +638,27 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
           ],
         ));
+  }
+
+  _textRow({required String label, required String value}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: w * 0.02, vertical: w * 0.03),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.grey,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+                color: ColorConst.textColor, fontWeight: FontWeight.bold),
+          )
+        ],
+      ),
+    );
   }
 }

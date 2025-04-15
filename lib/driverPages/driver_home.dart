@@ -214,7 +214,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                               color: ColorConst.textColor,
                                               fontWeight: FontWeight.bold)),
                                       Text(
-                                          'Remaining trips : ${vehicle.targetTrips - vehicle.totalTrips}',
+                                          'Remaining trips : ${vehicle.targetTrips - vehicle.weeklyTrips}',
                                           style: const TextStyle(
                                               color: ColorConst.textColor,
                                               fontWeight: FontWeight.bold)),
@@ -326,6 +326,13 @@ class _DriverHomePageState extends State<DriverHomePage> {
     TextEditingController totalEarningscontroller = TextEditingController();
     TextEditingController refundController = TextEditingController();
     TextEditingController cashCollectedcontroller = TextEditingController();
+    TextEditingController fuelExpensesController = TextEditingController();
+    bool isLate = Timestamp.now().toDate().isAfter(rentModel!.startTime
+        .toDate()
+        .add(Duration(hours: rentModel!.selectedShift * 12)));
+    bool addShift = Timestamp.now().toDate().isAfter(rentModel!.startTime
+        .toDate()
+        .add(Duration(hours: rentModel!.selectedShift * 12 + 2)));
     final formkey = GlobalKey<FormState>();
     return isLoading
         ? const Center(
@@ -351,347 +358,543 @@ class _DriverHomePageState extends State<DriverHomePage> {
                               blurRadius: 4,
                               spreadRadius: 1)
                         ]),
-                    child: Column(
-                      children: [
-                        Text(rentModel!.vehicleNumber,
-                            style: TextStyle(
-                                fontSize: w * 0.06,
-                                color: ColorConst.textColor,
-                                fontWeight: FontWeight.bold)),
-                        SizedBox(height: h * 0.02),
+                    child: Column(children: [
+                      Text(rentModel!.vehicleNumber,
+                          style: TextStyle(
+                              fontSize: w * 0.06,
+                              color: ColorConst.textColor,
+                              fontWeight: FontWeight.bold)),
+                      SizedBox(height: h * 0.02),
+                      Text(
+                          'Started time : ${DateFormat('EEE dd, hh:mm a').format(rentModel!.startTime.toDate())}',
+                          style: const TextStyle(
+                              color: ColorConst.textColor,
+                              fontWeight: FontWeight.bold)),
+                      SizedBox(height: h * 0.01),
+                      if (!addShift)
                         Text(
-                            'Started time : ${DateFormat.jm().format(rentModel!.startTime.toDate())}',
-                            style: const TextStyle(
-                                color: ColorConst.textColor,
+                            'End by : ${DateFormat('EEE dd, hh:mm a').format(rentModel!.startTime.toDate().add(Duration(hours: rentModel!.selectedShift * 12)))} (${rentModel!.selectedShift} Shift)',
+                            style: TextStyle(
+                                color: isLate
+                                    ? ColorConst.errorColor
+                                    : ColorConst.textColor,
                                 fontWeight: FontWeight.bold)),
-                        SizedBox(height: h * 0.02),
-                        TextFormField(
-                          controller: totalTripsController,
-                          maxLength: 2,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly
-                          ],
-                          decoration: InputDecoration(
-                            counterText: '',
-                            labelText: 'Total trips',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            prefixIcon: Padding(
-                                padding: EdgeInsets.all(w * 0.03),
-                                child: const Icon(Icons.car_rental_outlined,
-                                    color: ColorConst.primaryColor)),
-                            border: const OutlineInputBorder(),
-                            focusedBorder: const OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: ColorConst.primaryColor),
-                            ),
-                            filled: true,
-                            fillColor: ColorConst.boxColor,
-                            hintStyle: const TextStyle(color: Colors.grey),
-                          ),
-                          style: const TextStyle(color: ColorConst.textColor),
-                          keyboardType: TextInputType.number,
-                          autovalidateMode: AutovalidateMode.onUnfocus,
-                          textInputAction: TextInputAction.next,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter the Total trips";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: h * 0.02),
-                        TextFormField(
-                          controller: totalEarningscontroller,
-                          decoration: InputDecoration(
-                            labelText: 'Total Earnings',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            prefixIcon: Padding(
-                                padding: EdgeInsets.all(w * 0.05),
-                                child: Text(
-                                  '₹',
-                                  style: TextStyle(
-                                      color: ColorConst.primaryColor,
-                                      fontSize: w * 0.05),
-                                )),
-                            border: const OutlineInputBorder(),
-                            focusedBorder: const OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: ColorConst.primaryColor),
-                            ),
-                            filled: true,
-                            fillColor: ColorConst.boxColor,
-                            hintStyle: const TextStyle(color: Colors.grey),
-                          ),
-                          style: const TextStyle(color: ColorConst.textColor),
-                          keyboardType: TextInputType.number,
-                          autovalidateMode: AutovalidateMode.onUnfocus,
-                          textInputAction: TextInputAction.next,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter the Total earnings";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: h * 0.02),
-                        TextFormField(
-                          controller: refundController,
-                          decoration: InputDecoration(
-                            labelText: 'Refund',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            prefixIcon: Padding(
-                                padding: EdgeInsets.all(w * 0.05),
-                                child: Text(
-                                  '₹',
-                                  style: TextStyle(
-                                      color: ColorConst.primaryColor,
-                                      fontSize: w * 0.05),
-                                )),
-                            border: const OutlineInputBorder(),
-                            focusedBorder: const OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: ColorConst.primaryColor),
-                            ),
-                            filled: true,
-                            fillColor: ColorConst.boxColor,
-                            hintStyle: const TextStyle(color: Colors.grey),
-                          ),
-                          style: const TextStyle(color: ColorConst.textColor),
-                          keyboardType: TextInputType.number,
-                          autovalidateMode: AutovalidateMode.onUnfocus,
-                          textInputAction: TextInputAction.next,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter the refund amount";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: h * 0.02),
-                        TextFormField(
-                          controller: cashCollectedcontroller,
-                          decoration: InputDecoration(
-                            labelText: 'Cash Collected',
-                            labelStyle: const TextStyle(color: Colors.grey),
-                            prefixIcon: Padding(
-                                padding: EdgeInsets.all(w * 0.05),
-                                child: Text(
-                                  '₹',
-                                  style: TextStyle(
-                                      color: ColorConst.primaryColor,
-                                      fontSize: w * 0.05),
-                                )),
-                            border: const OutlineInputBorder(),
-                            focusedBorder: const OutlineInputBorder(
-                              borderSide:
-                                  BorderSide(color: ColorConst.primaryColor),
-                            ),
-                            filled: true,
-                            fillColor: ColorConst.boxColor,
-                            hintStyle: const TextStyle(color: Colors.grey),
-                          ),
-                          style: const TextStyle(color: ColorConst.textColor),
-                          keyboardType: TextInputType.number,
-                          autovalidateMode: AutovalidateMode.onUnfocus,
-                          textInputAction: TextInputAction.done,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter the Cash collected amount";
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: h * 0.03),
-                        if (Timestamp.now()
-                                .toDate()
-                                .difference(rentModel!.startTime.toDate())
-                                .inHours <
-                            2)
-                          ElevatedButton(
-                              style: ButtonStyle(
-                                side: const WidgetStatePropertyAll(
-                                    BorderSide(color: ColorConst.primaryColor)),
-                                backgroundColor: const WidgetStatePropertyAll(
-                                    ColorConst.boxColor),
-                                fixedSize:
-                                    WidgetStatePropertyAll(Size(w, h * 0.07)),
-                                foregroundColor: const WidgetStatePropertyAll(
-                                    ColorConst.primaryColor),
+                      if (addShift)
+                        Container(
+                          width: w,
+                          margin: EdgeInsets.symmetric(vertical: w * 0.02),
+                          padding: EdgeInsets.all(w * 0.02),
+                          decoration: BoxDecoration(
+                              color: ColorConst.backgroundColor,
+                              borderRadius: BorderRadius.circular(w * 0.03),
+                              boxShadow: [
+                                BoxShadow(
+                                    color: ColorConst.errorColor
+                                        .withValues(alpha: 0.5),
+                                    blurRadius: 4,
+                                    spreadRadius: 1)
+                              ]),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                color: Colors.grey,
                               ),
-                              onPressed: () async {
-                                if (formkey.currentState!.validate()) {
-                                  TextEditingController reasonController =
-                                      TextEditingController();
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      backgroundColor: ColorConst.boxColor,
-                                      title: const Text('Cancel shift?',
-                                          style: TextStyle(
-                                              color: ColorConst.textColor)),
-                                      content: TextField(
-                                        controller: reasonController,
-                                        style: const TextStyle(
-                                            color: ColorConst.textColor),
-                                        decoration: const InputDecoration(
-                                            border: OutlineInputBorder(),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
-                                                  color:
-                                                      ColorConst.primaryColor),
-                                            ),
-                                            filled: true,
-                                            fillColor: ColorConst.boxColor,
-                                            labelStyle: TextStyle(
-                                                color: ColorConst.textColor),
-                                            labelText: 'Reason'),
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                            style: const ButtonStyle(
-                                              side: WidgetStatePropertyAll(
-                                                  BorderSide(
-                                                      color: ColorConst
-                                                          .primaryColor)),
-                                              foregroundColor:
-                                                  WidgetStatePropertyAll(
-                                                      ColorConst.primaryColor),
-                                            ),
-                                            onPressed: () =>
-                                                Navigator.pop(context),
-                                            child: const Text('No')),
-                                        TextButton(
-                                            style: const ButtonStyle(
-                                              foregroundColor:
-                                                  WidgetStatePropertyAll(
-                                                      ColorConst
-                                                          .backgroundColor),
-                                              backgroundColor:
-                                                  WidgetStatePropertyAll(
-                                                      ColorConst.primaryColor),
-                                            ),
-                                            onPressed: () async {
-                                              if (reasonController
-                                                  .text.isEmpty) {
-                                                Fluttertoast.showToast(
-                                                  msg: "Enter the reason!",
-                                                  toastLength:
-                                                      Toast.LENGTH_SHORT,
-                                                  gravity: ToastGravity.TOP,
-                                                );
-                                              } else {
-                                                await FirebaseFirestore.instance
-                                                    .collection('organisations')
-                                                    .doc(currentUser!
-                                                        .organisationId)
-                                                    .collection('rents')
-                                                    .doc(rentModel!.rentId)
-                                                    .update({
-                                                  'end_time': Timestamp.now(),
-                                                  'total_trips': FieldValue
-                                                      .increment(int.parse(
-                                                          totalTripsController
-                                                              .text)),
-                                                  'total_earnings': FieldValue
-                                                      .increment(double.parse(
-                                                          totalEarningscontroller
-                                                              .text)),
-                                                  'cash_collected': FieldValue
-                                                      .increment(double.parse(
-                                                          cashCollectedcontroller
-                                                              .text)),
-                                                  'refund':
-                                                      FieldValue.increment(
-                                                          double.parse(
-                                                              refundController
-                                                                  .text)),
-                                                  'total_to_pay': 0,
-                                                  'rent_status':
-                                                      'canceled:${reasonController.text}',
-                                                });
-                                                await FirebaseFirestore.instance
-                                                    .collection('organisations')
-                                                    .doc(currentUser!
-                                                        .organisationId)
-                                                    .collection('vehicles')
-                                                    .doc(rentModel!.vehicleId)
-                                                    .update({
-                                                  'driver': '',
-                                                  'on_duty': false,
-                                                  'start_time': Timestamp.now(),
-                                                  'last_driven':
-                                                      Timestamp.now(),
-                                                  'selected_shift': 0,
-                                                  'total_trips': FieldValue
-                                                      .increment(int.parse(
-                                                          totalTripsController
-                                                              .text)),
-                                                });
-                                                await FirebaseFirestore.instance
-                                                    .collection('organisations')
-                                                    .doc(currentUser!
-                                                        .organisationId)
-                                                    .collection('drivers')
-                                                    .doc(currentUser!.userId)
-                                                    .update({
-                                                  'on_rent': '',
-                                                  'cash_collected': FieldValue
-                                                      .increment(double.parse(
-                                                          cashCollectedcontroller
-                                                              .text)),
-                                                  'total_earnings': FieldValue
-                                                      .increment(double.parse(
-                                                          totalEarningscontroller
-                                                              .text)),
-                                                  'refund':
-                                                      FieldValue.increment(
-                                                          double.parse(
-                                                              refundController
-                                                                  .text)),
-                                                  'total_trips': FieldValue
-                                                      .increment(int.parse(
-                                                          totalTripsController
-                                                              .text))
-                                                });
-                                                await getDriverDetails();
-                                              }
-                                            },
-                                            child: const Text('Yes')),
-                                      ],
+                              SizedBox(
+                                width: w * 0.03,
+                              ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    const Text(
+                                      'It has been more than 2 hours of the selected shift. 1 extra shift will be added',
+                                      textAlign: TextAlign.start,
+                                      style: TextStyle(color: Colors.grey),
                                     ),
-                                  );
-                                } else {
-                                  Fluttertoast.showToast(
-                                    msg: "Fill the required fields!",
-                                    toastLength: Toast.LENGTH_SHORT,
-                                    gravity: ToastGravity.TOP,
-                                  );
-                                }
-                              },
-                              child: const Text("Cancel shift")),
-                        SizedBox(height: h * 0.02),
+                                    SizedBox(height: h * 0.01),
+                                    Text(
+                                      'End by : ${DateFormat('EEE dd, hh:mm a').format(rentModel!.startTime.toDate().add(Duration(hours: (rentModel!.selectedShift + 1) * 12)))} (${rentModel!.selectedShift + 1} Shift)',
+                                      textAlign: TextAlign.start,
+                                      style: const TextStyle(
+                                          color: ColorConst.textColor,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      SizedBox(height: h * 0.02),
+                      TextFormField(
+                        controller: totalTripsController,
+                        maxLength: 2,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        decoration: InputDecoration(
+                          counterText: '',
+                          labelText: 'Total trips',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: Padding(
+                              padding: EdgeInsets.all(w * 0.03),
+                              child: const Icon(Icons.car_rental_outlined,
+                                  color: ColorConst.primaryColor)),
+                          border: const OutlineInputBorder(),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: ColorConst.primaryColor),
+                          ),
+                          filled: true,
+                          fillColor: ColorConst.boxColor,
+                          hintStyle: const TextStyle(color: Colors.grey),
+                        ),
+                        style: const TextStyle(color: ColorConst.textColor),
+                        keyboardType: TextInputType.number,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Enter the Total trips";
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: h * 0.02),
+                      TextFormField(
+                        controller: totalEarningscontroller,
+                        decoration: InputDecoration(
+                          labelText: 'Total Earnings',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: Padding(
+                              padding: EdgeInsets.all(w * 0.05),
+                              child: Text(
+                                '₹',
+                                style: TextStyle(
+                                    color: ColorConst.primaryColor,
+                                    fontSize: w * 0.05),
+                              )),
+                          border: const OutlineInputBorder(),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: ColorConst.primaryColor),
+                          ),
+                          filled: true,
+                          fillColor: ColorConst.boxColor,
+                          hintStyle: const TextStyle(color: Colors.grey),
+                        ),
+                        style: const TextStyle(color: ColorConst.textColor),
+                        keyboardType: TextInputType.number,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Enter the Total earnings";
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: h * 0.02),
+                      TextFormField(
+                        controller: refundController,
+                        decoration: InputDecoration(
+                          labelText: 'Refund',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: Padding(
+                              padding: EdgeInsets.all(w * 0.05),
+                              child: Text(
+                                '₹',
+                                style: TextStyle(
+                                    color: ColorConst.primaryColor,
+                                    fontSize: w * 0.05),
+                              )),
+                          border: const OutlineInputBorder(),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: ColorConst.primaryColor),
+                          ),
+                          filled: true,
+                          fillColor: ColorConst.boxColor,
+                          hintStyle: const TextStyle(color: Colors.grey),
+                        ),
+                        style: const TextStyle(color: ColorConst.textColor),
+                        keyboardType: TextInputType.number,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Enter the refund amount";
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: h * 0.02),
+                      TextFormField(
+                        controller: cashCollectedcontroller,
+                        decoration: InputDecoration(
+                          labelText: 'Cash Collected',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: Padding(
+                              padding: EdgeInsets.all(w * 0.05),
+                              child: Text(
+                                '₹',
+                                style: TextStyle(
+                                    color: ColorConst.primaryColor,
+                                    fontSize: w * 0.05),
+                              )),
+                          border: const OutlineInputBorder(),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: ColorConst.primaryColor),
+                          ),
+                          filled: true,
+                          fillColor: ColorConst.boxColor,
+                          hintStyle: const TextStyle(color: Colors.grey),
+                        ),
+                        style: const TextStyle(color: ColorConst.textColor),
+                        keyboardType: TextInputType.number,
+                        autovalidateMode: AutovalidateMode.onUnfocus,
+                        textInputAction: TextInputAction.next,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Enter the Cash collected amount";
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: h * 0.03),
+                      TextFormField(
+                        controller: fuelExpensesController,
+                        decoration: InputDecoration(
+                          labelText: 'Fuel expenses',
+                          hintText: '(Optional)',
+                          labelStyle: const TextStyle(color: Colors.grey),
+                          prefixIcon: Padding(
+                              padding: EdgeInsets.all(w * 0.05),
+                              child: Text(
+                                '₹',
+                                style: TextStyle(
+                                    color: ColorConst.primaryColor,
+                                    fontSize: w * 0.05),
+                              )),
+                          border: const OutlineInputBorder(),
+                          focusedBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: ColorConst.primaryColor),
+                          ),
+                          filled: true,
+                          fillColor: ColorConst.boxColor,
+                          hintStyle: const TextStyle(color: Colors.grey),
+                        ),
+                        style: const TextStyle(color: ColorConst.textColor),
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                      ),
+                      SizedBox(height: h * 0.03),
+                      ElevatedButton(
+                          style: ButtonStyle(
+                            backgroundColor: const WidgetStatePropertyAll(
+                                ColorConst.primaryColor),
+                            fixedSize:
+                                WidgetStatePropertyAll(Size(w, h * 0.06)),
+                            foregroundColor: const WidgetStatePropertyAll(
+                                ColorConst.backgroundColor),
+                          ),
+                          onPressed: () {
+                            if (formkey.currentState!.validate()) {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: ColorConst.boxColor,
+                                  title: const Text('End shift?',
+                                      style: TextStyle(
+                                          color: ColorConst.primaryColor)),
+                                  content: const Text(
+                                    'Are you sure you want to end this shift now?',
+                                    style:
+                                        TextStyle(color: ColorConst.textColor),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                        style: const ButtonStyle(
+                                          side: WidgetStatePropertyAll(
+                                              BorderSide(
+                                                  color:
+                                                      ColorConst.primaryColor)),
+                                          foregroundColor:
+                                              WidgetStatePropertyAll(
+                                                  ColorConst.primaryColor),
+                                        ),
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('No')),
+                                    TextButton(
+                                        style: const ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStatePropertyAll(
+                                                  ColorConst.backgroundColor),
+                                          backgroundColor:
+                                              WidgetStatePropertyAll(
+                                                  ColorConst.primaryColor),
+                                        ),
+                                        onPressed: () async {
+                                          if (!formkey.currentState!
+                                              .validate()) {
+                                            Fluttertoast.showToast(
+                                              msg:
+                                                  "Fill up the required fields!",
+                                              toastLength: Toast.LENGTH_SHORT,
+                                              gravity: ToastGravity.TOP,
+                                            );
+                                          } else {
+                                            double totaltoPay = -(double.parse(
+                                                        totalEarningscontroller
+                                                            .text) +
+                                                    double.parse(
+                                                        refundController.text) -
+                                                    double.parse(
+                                                        cashCollectedcontroller
+                                                            .text)) +
+                                                ((rentModel!.selectedShift) *
+                                                    (rentModel!.vehicleRent));
+
+                                            await FirebaseFirestore.instance
+                                                .collection('organisations')
+                                                .doc(
+                                                    currentUser!.organisationId)
+                                                .collection('rents')
+                                                .doc(rentModel!.rentId)
+                                                .update({
+                                              'end_time': Timestamp.now(),
+                                              'total_trips': int.parse(
+                                                  totalTripsController.text),
+                                              'total_earnings': double.parse(
+                                                  totalEarningscontroller.text),
+                                              'cash_collected': double.parse(
+                                                  cashCollectedcontroller.text),
+                                              'refund': double.parse(
+                                                  refundController.text),
+                                              'total_to_pay': totaltoPay,
+                                              'rent_status': 'COMPLETED',
+                                              'weekly_trips':
+                                                  FieldValue.increment(
+                                                      int.parse(
+                                                          totalTripsController
+                                                              .text)),
+                                              'fuel_expense':
+                                                  fuelExpensesController
+                                                          .text.isEmpty
+                                                      ? 0
+                                                      : double.parse(
+                                                          fuelExpensesController
+                                                              .text)
+                                            });
+                                            await FirebaseFirestore.instance
+                                                .collection('organisations')
+                                                .doc(
+                                                    currentUser!.organisationId)
+                                                .collection('vehicles')
+                                                .doc(rentModel!.vehicleId)
+                                                .update({
+                                              'driver': '',
+                                              'on_duty': false,
+                                              'start_time': Timestamp.now(),
+                                              'last_driven': Timestamp.now(),
+                                              'selected_shift': 0,
+                                              'weekly_trips':
+                                                  FieldValue.increment(
+                                                      int.parse(
+                                                          totalTripsController
+                                                              .text)),
+                                              'total_trips':
+                                                  FieldValue.increment(
+                                                      int.parse(
+                                                          totalTripsController
+                                                              .text)),
+                                            });
+                                            await FirebaseFirestore.instance
+                                                .collection('organisations')
+                                                .doc(
+                                                    currentUser!.organisationId)
+                                                .collection('drivers')
+                                                .doc(currentUser!.userId)
+                                                .update({
+                                              'on_rent': '',
+                                              'cash_collected': FieldValue
+                                                  .increment(double.parse(
+                                                      cashCollectedcontroller
+                                                          .text)),
+                                              'total_earnings': FieldValue
+                                                  .increment(double.parse(
+                                                      totalEarningscontroller
+                                                          .text)),
+                                              'refund': FieldValue.increment(
+                                                  double.parse(
+                                                      refundController.text)),
+                                              'total_shifts':
+                                                  FieldValue.increment(
+                                                      rentModel!.selectedShift),
+                                              'vehicle_rent':
+                                                  FieldValue.increment(
+                                                      rentModel!.selectedShift *
+                                                          rentModel!
+                                                              .vehicleRent),
+                                              'total_trips':
+                                                  FieldValue.increment(
+                                                      int.parse(
+                                                          totalTripsController
+                                                              .text)),
+                                              'fuel_expense':
+                                                  FieldValue.increment(
+                                                      double.parse(
+                                                          fuelExpensesController
+                                                              .text)),
+                                              'wallet': FieldValue.increment(
+                                                  -totaltoPay),
+                                            });
+                                            Fluttertoast.showToast(
+                                              msg:
+                                                  "Shift completed successfully!",
+                                              toastLength: Toast.LENGTH_SHORT,
+                                              gravity: ToastGravity.TOP,
+                                            );
+
+                                            Navigator.pop(context);
+                                            await getDriverDetails();
+                                          }
+                                        },
+                                        child: const Text('Yes')),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              Fluttertoast.showToast(
+                                msg: "Fill the required fields!",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.TOP,
+                              );
+                            }
+                          },
+                          child: const Text("End shift")),
+                      SizedBox(height: h * 0.02),
+                      if (!isLate) ...[
                         ElevatedButton(
                             style: ButtonStyle(
+                              side: const WidgetStatePropertyAll(
+                                  BorderSide(color: ColorConst.primaryColor)),
                               backgroundColor: const WidgetStatePropertyAll(
-                                  ColorConst.primaryColor),
+                                  ColorConst.boxColor),
                               fixedSize:
-                                  WidgetStatePropertyAll(Size(w, h * 0.07)),
+                                  WidgetStatePropertyAll(Size(w, h * 0.06)),
                               foregroundColor: const WidgetStatePropertyAll(
-                                  ColorConst.backgroundColor),
+                                  ColorConst.primaryColor),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: ColorConst.boxColor,
+                                  title: const Text('Add extra shift?',
+                                      style: TextStyle(
+                                          color: ColorConst.primaryColor)),
+                                  content: Text(
+                                      'Currently selected ${rentModel!.selectedShift} shift. Add an extra 12 hrs?',
+                                      style: const TextStyle(
+                                          color: ColorConst.textColor)),
+                                  actions: [
+                                    TextButton(
+                                        style: const ButtonStyle(
+                                          side: WidgetStatePropertyAll(
+                                              BorderSide(
+                                                  color:
+                                                      ColorConst.primaryColor)),
+                                          foregroundColor:
+                                              WidgetStatePropertyAll(
+                                                  ColorConst.primaryColor),
+                                        ),
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('No')),
+                                    TextButton(
+                                        style: const ButtonStyle(
+                                          foregroundColor:
+                                              WidgetStatePropertyAll(
+                                                  ColorConst.backgroundColor),
+                                          backgroundColor:
+                                              WidgetStatePropertyAll(
+                                                  ColorConst.primaryColor),
+                                        ),
+                                        onPressed: () async {
+                                          await FirebaseFirestore.instance
+                                              .collection('organisations')
+                                              .doc(currentUser!.organisationId)
+                                              .collection('rents')
+                                              .doc(rentModel!.rentId)
+                                              .update({
+                                            'selected_shift':
+                                                FieldValue.increment(1)
+                                          });
+                                          Fluttertoast.showToast(
+                                            msg: "Extra shift added",
+                                            toastLength: Toast.LENGTH_SHORT,
+                                            gravity: ToastGravity.TOP,
+                                          );
+
+                                          Navigator.pop(context);
+                                          await getDriverDetails();
+                                        },
+                                        child: const Text('Yes')),
+                                  ],
+                                ),
+                              );
+                            },
+                            child: const Text('Add an extra shift')),
+                        SizedBox(
+                          height: h * 0.02,
+                        )
+                      ],
+                      if (Timestamp.now()
+                              .toDate()
+                              .difference(rentModel!.startTime.toDate())
+                              .inHours <
+                          2)
+                        ElevatedButton(
+                            style: ButtonStyle(
+                              side: const WidgetStatePropertyAll(
+                                  BorderSide(color: ColorConst.primaryColor)),
+                              backgroundColor: const WidgetStatePropertyAll(
+                                  ColorConst.boxColor),
+                              fixedSize:
+                                  WidgetStatePropertyAll(Size(w, h * 0.06)),
+                              foregroundColor: const WidgetStatePropertyAll(
+                                  ColorConst.primaryColor),
+                            ),
+                            onPressed: () async {
                               if (formkey.currentState!.validate()) {
+                                TextEditingController reasonController =
+                                    TextEditingController();
                                 showDialog(
                                   context: context,
                                   builder: (context) => AlertDialog(
                                     backgroundColor: ColorConst.boxColor,
-                                    title: const Text('End shift?',
+                                    title: const Text('Cancel shift?',
                                         style: TextStyle(
                                             color: ColorConst.primaryColor)),
-                                    content: const Text(
-                                      'Are you sure you want to end this shift now?',
-                                      style: TextStyle(
+                                    content: TextField(
+                                      controller: reasonController,
+                                      style: const TextStyle(
                                           color: ColorConst.textColor),
+                                      decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderSide: BorderSide(
+                                                color: ColorConst.primaryColor),
+                                          ),
+                                          filled: true,
+                                          fillColor: ColorConst.boxColor,
+                                          labelStyle: TextStyle(
+                                              color: ColorConst.textColor),
+                                          labelText: 'Reason'),
                                     ),
                                     actions: [
                                       TextButton(
@@ -717,27 +920,13 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                     ColorConst.primaryColor),
                                           ),
                                           onPressed: () async {
-                                            if (!formkey.currentState!
-                                                .validate()) {
+                                            if (reasonController.text.isEmpty) {
                                               Fluttertoast.showToast(
-                                                msg:
-                                                    "Fill up the required fields!",
+                                                msg: "Enter the reason!",
                                                 toastLength: Toast.LENGTH_SHORT,
                                                 gravity: ToastGravity.TOP,
                                               );
                                             } else {
-                                              double totaltoPay = -(double.parse(
-                                                          totalEarningscontroller
-                                                              .text) +
-                                                      double.parse(
-                                                          refundController
-                                                              .text) -
-                                                      double.parse(
-                                                          cashCollectedcontroller
-                                                              .text)) +
-                                                  ((rentModel!.selectedShift) *
-                                                      (rentModel!.vehicleRent));
-
                                               await FirebaseFirestore.instance
                                                   .collection('organisations')
                                                   .doc(currentUser!
@@ -746,18 +935,32 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                   .doc(rentModel!.rentId)
                                                   .update({
                                                 'end_time': Timestamp.now(),
-                                                'total_trips': int.parse(
-                                                    totalTripsController.text),
-                                                'total_earnings': double.parse(
-                                                    totalEarningscontroller
-                                                        .text),
-                                                'cash_collected': double.parse(
-                                                    cashCollectedcontroller
-                                                        .text),
-                                                'refund': double.parse(
-                                                    refundController.text),
-                                                'total_to_pay': totaltoPay,
-                                                'rent_status': 'completed',
+                                                'total_trips':
+                                                    FieldValue.increment(
+                                                        int.parse(
+                                                            totalTripsController
+                                                                .text)),
+                                                'total_earnings': FieldValue
+                                                    .increment(double.parse(
+                                                        totalEarningscontroller
+                                                            .text)),
+                                                'cash_collected': FieldValue
+                                                    .increment(double.parse(
+                                                        cashCollectedcontroller
+                                                            .text)),
+                                                'refund': FieldValue.increment(
+                                                    double.parse(
+                                                        refundController.text)),
+                                                'total_to_pay': 0,
+                                                'rent_status':
+                                                    'canceled:${reasonController.text}',
+                                                'fuel_expense':
+                                                    fuelExpensesController
+                                                            .text.isEmpty
+                                                        ? 0
+                                                        : double.parse(
+                                                            fuelExpensesController
+                                                                .text)
                                               });
                                               await FirebaseFirestore.instance
                                                   .collection('organisations')
@@ -796,31 +999,21 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                 'refund': FieldValue.increment(
                                                     double.parse(
                                                         refundController.text)),
-                                                'total_shifts':
-                                                    FieldValue.increment(
-                                                        rentModel!
-                                                            .selectedShift),
-                                                'vehicle_rent':
-                                                    FieldValue.increment(
-                                                        rentModel!
-                                                                .selectedShift *
-                                                            rentModel!
-                                                                .vehicleRent),
                                                 'total_trips':
                                                     FieldValue.increment(
                                                         int.parse(
                                                             totalTripsController
                                                                 .text)),
-                                                'wallet': FieldValue.increment(
-                                                    -totaltoPay),
+                                                'fuel_expense': FieldValue
+                                                    .increment(double.parse(
+                                                        fuelExpensesController
+                                                            .text)),
                                               });
                                               Fluttertoast.showToast(
-                                                msg:
-                                                    "Shift completed successfully!",
+                                                msg: "Shift canceled!",
                                                 toastLength: Toast.LENGTH_SHORT,
                                                 gravity: ToastGravity.TOP,
                                               );
-
                                               Navigator.pop(context);
                                               await getDriverDetails();
                                             }
@@ -837,9 +1030,8 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                 );
                               }
                             },
-                            child: const Text("End shift"))
-                      ],
-                    ),
+                            child: const Text("Cancel shift")),
+                    ]),
                   ))
                 ],
               ),

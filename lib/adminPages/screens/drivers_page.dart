@@ -178,7 +178,7 @@ class _DriversPageState extends State<DriversPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: drivers.length,
                 itemBuilder: (context, index) {
-                  final tripCompletion = drivers[index].totalTrips /
+                  final tripCompletion = drivers[index].weeklyTrips /
                       (drivers[index].targetTrips > 0
                           ? drivers[index].targetTrips
                           : 1);
@@ -258,7 +258,7 @@ class _DriversPageState extends State<DriversPage> {
                                           Align(
                                             alignment: Alignment.centerRight,
                                             child: Text(
-                                              '${drivers[index].totalTrips.toString()} / ${drivers[index].targetTrips.toString()} trips',
+                                              '${drivers[index].weeklyTrips.toString()} / ${drivers[index].targetTrips.toString()} trips',
                                               style: const TextStyle(
                                                 color: Colors.grey,
                                                 fontSize: 12,
@@ -888,10 +888,12 @@ class _DriversPageState extends State<DriversPage> {
                                                       organisationName:
                                                           currentUser!
                                                               .organisationName,
+                                                      weeklyTrips: 0,
+                                                      fuelExpense: 0,
+                                                      vehicleRent: 0,
                                                       driverAddedOn:
                                                           DateTime.now()
-                                                              .toString(),
-                                                      vehicleRent: 0)
+                                                              .toString())
                                                   .toJson());
                                           Fluttertoast.showToast(
                                             msg:
@@ -975,7 +977,9 @@ class _DriversPageState extends State<DriversPage> {
                                                     wallet: 0,
                                                     cashCollected: 0,
                                                     refund: 0,
-                                                    vehicleRent: 0)
+                                                    fuelExpense: 0,
+                                                    vehicleRent: 0,
+                                                    weeklyTrips: 0)
                                                 .toJson());
                                         Fluttertoast.showToast(
                                           msg:

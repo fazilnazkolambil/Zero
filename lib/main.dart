@@ -88,6 +88,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 totalShifts: 0,
                 organisationName: 'Zero uber',
                 driverAddedOn: '2025-04-07 18:48:59.601390',
+                weeklyTrips: 0,
+                fuelExpense: 0,
                 vehicleRent: 0)
             .toJson());
     // await FirebaseFirestore.instance.collection('users').doc('zer0user1').set({

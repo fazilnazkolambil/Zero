@@ -15,6 +15,7 @@ class RentModel {
   double cashCollected;
   double totaltoPay;
   double refund;
+  double? fuelExpense;
   String rentStatus;
   RentModel({
     required this.rentId,
@@ -30,6 +31,7 @@ class RentModel {
     required this.totalEarnings,
     required this.cashCollected,
     required this.refund,
+    this.fuelExpense,
     required this.totaltoPay,
     required this.rentStatus,
   });
@@ -47,6 +49,7 @@ class RentModel {
           double? totalEarnings,
           double? cashCollected,
           double? refund,
+          double? fuelExpense,
           double? totaltoPay,
           String? rentStatus}) =>
       RentModel(
@@ -63,6 +66,7 @@ class RentModel {
         totalEarnings: totalEarnings ?? this.totalEarnings,
         cashCollected: cashCollected ?? this.cashCollected,
         refund: refund ?? this.refund,
+        fuelExpense: fuelExpense ?? this.fuelExpense,
         totaltoPay: totaltoPay ?? this.totaltoPay,
         rentStatus: rentStatus ?? this.rentStatus,
       );
@@ -81,6 +85,7 @@ class RentModel {
       totalEarnings: json['total_earnings'] ?? 0,
       cashCollected: json['cash_collected'] ?? 0,
       refund: json['refund'] ?? 0,
+      fuelExpense: json['fuel_expense'] ?? 0,
       totaltoPay: json['total_to_pay'] ?? 0,
       rentStatus: json['rent_status'] ?? '',
     );
@@ -99,6 +104,7 @@ class RentModel {
         'total_earnings': totalEarnings,
         'cash_collected': cashCollected,
         'refund': refund,
+        'fuel_expense': fuelExpense,
         'total_to_pay': totaltoPay,
         'rent_status': rentStatus,
       };

@@ -161,12 +161,17 @@ class DriverProfilePage extends StatelessWidget {
                       ),
                       if (currentDriver!.wallet < 0)
                         ElevatedButton(
-                            style: const ButtonStyle(
-                                shadowColor: WidgetStatePropertyAll(
+                            style: ButtonStyle(
+                                elevation: const WidgetStatePropertyAll(3),
+                                shape: WidgetStatePropertyAll(
+                                    RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(w * 0.03))),
+                                shadowColor: const WidgetStatePropertyAll(
                                     ColorConst.successColor),
-                                foregroundColor: WidgetStatePropertyAll(
+                                foregroundColor: const WidgetStatePropertyAll(
                                     ColorConst.successColor),
-                                backgroundColor: WidgetStatePropertyAll(
+                                backgroundColor: const WidgetStatePropertyAll(
                                     ColorConst.boxColor)),
                             onPressed: () {},
                             child: const Text('Pay now'))
@@ -182,9 +187,9 @@ class DriverProfilePage extends StatelessWidget {
   }
 
   Widget progressDetails() {
-    double totalEarning = currentDriver!.totalEarnings +
-        currentDriver!.refund -
-        currentDriver!.cashCollected;
+    double totalEarning = currentDriver!.totalEarnings -
+        currentDriver!.vehicleRent -
+        currentDriver!.fuelExpense;
     return Card(
         margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
         color: ColorConst.boxColor,
@@ -252,15 +257,17 @@ class DriverProfilePage extends StatelessWidget {
                   Column(
                     children: [
                       Text(
-                        totalEarning.toString(),
-                        style: const TextStyle(
+                        totalEarning.toStringAsFixed(2),
+                        style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: ColorConst.textColor),
+                            color: totalEarning >= 0
+                                ? ColorConst.successColor
+                                : ColorConst.errorColor),
                       ),
                       SizedBox(height: w * 0.03),
                       const Text(
-                        'Total earnings',
+                        'Total income',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
@@ -342,73 +349,21 @@ class DriverProfilePage extends StatelessWidget {
             SizedBox(
               height: h * 0.02,
             ),
-            _buildTextRow(
-                'Total Earnings', "₹ ${currentDriver!.totalEarnings}"),
-            _buildTextRow('Total Refund', '₹ ${currentDriver!.refund}'),
-            _buildTextRow(
-                'Total Cash Collected', '₹ ${currentDriver!.cashCollected}'),
+            _buildTextRow('Total Earnings',
+                "₹ ${currentDriver!.totalEarnings.toStringAsFixed(2)}"),
+            _buildTextRow('Total Refund',
+                '₹ ${currentDriver!.refund.toStringAsFixed(2)}'),
+            _buildTextRow('Total Cash Collected',
+                '₹ ${currentDriver!.cashCollected.toStringAsFixed(2)}'),
+            _buildTextRow('Total Expense on fuel',
+                '₹ ${currentDriver!.fuelExpense.toStringAsFixed(2)}'),
+            _buildTextRow('Total rent',
+                '₹ ${currentDriver!.vehicleRent.toStringAsFixed(2)}'),
           ],
         ),
       ),
     );
   }
-
-  // Widget _buildTripDetails() {
-  //   double tripCompletion = totalTrips / (targetTrips > 0 ? targetTrips : 1);
-  //   return Card(
-  //     margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
-  //     color: ColorConst.boxColor,
-  //     child: Padding(
-  //       padding: const EdgeInsets.all(16),
-  //       child: Column(
-  //         crossAxisAlignment: CrossAxisAlignment.start,
-  //         children: [
-  //           Row(
-  //             children: [
-  //               const Icon(Icons.directions_subway_outlined,
-  //                   color: ColorConst.textColor),
-  //               SizedBox(width: w * 0.03),
-  //               const Text(
-  //                 'Trip details',
-  //                 style: TextStyle(
-  //                   fontSize: 20,
-  //                   fontWeight: FontWeight.bold,
-  //                   color: ColorConst.textColor,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //           SizedBox(
-  //             height: h * 0.02,
-  //           ),
-  //           const Divider(),
-  //           _buildTextRow('Total Trips', totalTrips.toString()),
-  //           _buildTextRow('Target Trips', targetTrips.toString()),
-  //           _buildTextRow('Total Shifts', totalShifts.toString()),
-  //           // ClipRRect(
-  //           //   borderRadius: BorderRadius.circular(10),
-  //           //   child: LinearProgressIndicator(
-  //           //     value: tripCompletion > 1 ? 1 : tripCompletion,
-  //           //     minHeight: 15,
-  //           //     backgroundColor: Colors.grey.shade200,
-  //           //     valueColor: AlwaysStoppedAnimation<Color>(
-  //           //       tripCompletion >= 1 ? Colors.green : Colors.blue,
-  //           //     ),
-  //           //   ),
-  //           // ),
-  //           // const SizedBox(height: 4),
-  //           // Text(
-  //           //   '${(tripCompletion * 100).toStringAsFixed(0)}%',
-  //           //   style: TextStyle(
-  //           //     color: tripCompletion >= 1 ? Colors.green : Colors.blue,
-  //           //     fontWeight: FontWeight.bold,
-  //           //   ),
-  //           // ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildTextRow(String label, String value) {
     return Padding(

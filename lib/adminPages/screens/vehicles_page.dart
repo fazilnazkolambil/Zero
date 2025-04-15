@@ -175,7 +175,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: vehicles.length,
                 itemBuilder: (context, index) {
-                  final tripCompletion = vehicles[index].totalTrips /
+                  final tripCompletion = vehicles[index].weeklyTrips /
                       (vehicles[index].targetTrips > 0
                           ? vehicles[index].targetTrips
                           : 1);
@@ -266,7 +266,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                   Align(
                                     alignment: Alignment.centerRight,
                                     child: Text(
-                                      '${vehicles[index].totalTrips.toString()} / ${vehicles[index].targetTrips.toString()} trips',
+                                      '${vehicles[index].weeklyTrips.toString()} / ${vehicles[index].targetTrips.toString()} trips',
                                       style: const TextStyle(
                                         color: Colors.grey,
                                         fontSize: 12,
@@ -696,6 +696,7 @@ class _VehiclesPageState extends State<VehiclesPage> {
                                                       totalTrips: 0,
                                                       targetTrips: int.parse(
                                                           targetTrips.text),
+                                                      weeklyTrips: 0,
                                                       rentalPlan:
                                                           rentalPlan.toString())
                                                   .toJson());

@@ -10,6 +10,7 @@ class VehicleModel {
   String vehicleId;
   bool isDeleted;
   int totalTrips;
+  int weeklyTrips;
   int targetTrips;
   double rent;
   int? selectedShift;
@@ -29,6 +30,7 @@ class VehicleModel {
       required this.vehicleId,
       required this.isDeleted,
       required this.totalTrips,
+      required this.weeklyTrips,
       required this.targetTrips,
       required this.rent,
       this.selectedShift,
@@ -45,6 +47,7 @@ class VehicleModel {
           String? vehicleId,
           bool? isDeleted,
           int? totalTrips,
+          int? weeklyTrips,
           int? targetTrips,
           double? rent,
           int? selectedShift,
@@ -61,6 +64,7 @@ class VehicleModel {
         vehicleId: vehicleId ?? this.vehicleId,
         isDeleted: isDeleted ?? this.isDeleted,
         totalTrips: totalTrips ?? this.totalTrips,
+        weeklyTrips: weeklyTrips ?? this.weeklyTrips,
         targetTrips: targetTrips ?? this.targetTrips,
         rent: rent ?? this.rent,
         selectedShift: selectedShift ?? this.selectedShift,
@@ -79,6 +83,7 @@ class VehicleModel {
         isDeleted: json["is_deleted"] ?? false,
         onDuty: json["on_duty"] ?? false,
         totalTrips: json["total_trips"] ?? false,
+        weeklyTrips: json["weekly_trips"] ?? false,
         targetTrips: json["target_trips"] ?? false,
         rent: json["rent"] ?? 0,
         selectedShift: json["selected_shift"] ?? 0,
@@ -97,6 +102,7 @@ class VehicleModel {
         "is_deleted": isDeleted,
         "on_duty": onDuty,
         "total_trips": totalTrips,
+        "weekly_trips": weeklyTrips,
         "target_trips": targetTrips,
         "rent": rent,
         "selected_shift": selectedShift,

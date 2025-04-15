@@ -11,8 +11,7 @@ import 'package:zero/models/rent_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class AdminDashboard extends StatefulWidget {
-  final Map<String, dynamic> fleet;
-  const AdminDashboard({super.key, required this.fleet});
+  const AdminDashboard({super.key});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -201,18 +200,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget rentStats() {
-    double totalToGet = rentModels.isEmpty
-        ? 0
-        : rentModels.fold(0, (toGet, a) => toGet - a.totaltoPay);
     double totalRent = rentModels.isEmpty
         ? 0
         : rentModels
             .map((item) => item.selectedShift * item.vehicleRent)
             .reduce((rent, element) => rent + element);
+    double totalToGet = rentModels.isEmpty
+        ? 0
+        : rentModels.fold(0, (toGet, a) => toGet + a.totaltoPay);
+
     double driversWallet = driverModels.isEmpty
         ? 0
         : driverModels.fold(0, (wallet, a) => wallet + a.wallet);
-    double availableBalance = totalToGet + driversWallet;
+    double paymentReceived = 0;
     return Column(
       children: [
         Row(
@@ -233,12 +233,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           children: [
             _buildSummaryCard(
                 title: 'Drivers to pay',
-                value: '₹ ${driversWallet.toStringAsFixed(2)}',
-                subtitle: 'Balance amount to be paid by the drivers'),
+                value: '₹ ${(-driversWallet).toStringAsFixed(2)}',
+                subtitle: 'Pending balance of drivers'),
             _buildSummaryCard(
                 title: 'Available balance',
-                value: '₹ ${availableBalance.toStringAsFixed(2)}',
-                subtitle: 'Total amount available in your wallet'),
+                value: '₹ ${paymentReceived.toStringAsFixed(2)}',
+                subtitle: 'Total payment received'),
           ],
         ),
       ],
@@ -307,7 +307,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     double insurance = 0;
     for (var vehicle in vehicleModels) {
       rentalPlan = widget.fleet[vehicle.rentalPlan];
-      tripsPerDay.add(vehicle.totalTrips);
+      tripsPerDay.add(vehicle.weeklyTrips);
       if (vehicle.droppedOn != null) {
         insurance += rentalPlan['insurance'] ??
             0 +

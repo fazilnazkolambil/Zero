@@ -7,13 +7,13 @@ class UserModel {
   String userRole;
   String userName;
   bool isDeleted;
-  int? totalTrips;
-  double? totalEarnings;
-  double? wallet;
+  // int? totalTrips;
+  // double? totalEarnings;
+  // double? wallet;
   String status;
   String isBlocked;
-  int? targetTrips;
-  int? totalShifts;
+  // int? targetTrips;
+  // int? totalShifts;
 
   UserModel({
     required this.mobileNumber,
@@ -24,13 +24,13 @@ class UserModel {
     required this.userRole,
     required this.userName,
     required this.isDeleted,
-    this.totalTrips,
-    this.totalEarnings,
-    this.wallet,
+    // this.totalTrips,
+    // this.totalEarnings,
+    // this.wallet,
     required this.status,
     required this.isBlocked,
-    this.targetTrips,
-    this.totalShifts,
+    // this.targetTrips,
+    // this.totalShifts,
   });
 
   UserModel copyWith({
@@ -42,16 +42,13 @@ class UserModel {
     String? userRole,
     String? userName,
     bool? isDeleted,
-    int? totalTrips,
-    double? totalEarnings,
-    double? wallet,
-    String? onRent,
-    String? driverName,
+    // int? totalTrips,
+    // double? totalEarnings,
+    // double? wallet,
     String? status,
-    String? driverId,
     String? isBlocked,
-    int? targetTrips,
-    int? totalShifts,
+    // int? targetTrips,
+    // int? totalShifts,
   }) =>
       UserModel(
         mobileNumber: mobileNumber ?? this.mobileNumber,
@@ -62,13 +59,13 @@ class UserModel {
         userRole: userRole ?? this.userRole,
         userName: userName ?? this.userName,
         isDeleted: isDeleted ?? this.isDeleted,
-        totalTrips: totalTrips ?? this.totalTrips,
-        totalEarnings: totalEarnings ?? this.totalEarnings,
-        wallet: wallet ?? this.wallet,
+        // totalTrips: totalTrips ?? this.totalTrips,
+        // totalEarnings: totalEarnings ?? this.totalEarnings,
+        // wallet: wallet ?? this.wallet,
         status: status ?? this.status,
         isBlocked: isBlocked ?? this.isBlocked,
-        targetTrips: targetTrips ?? this.targetTrips,
-        totalShifts: totalShifts ?? this.totalShifts,
+        // targetTrips: targetTrips ?? this.targetTrips,
+        // totalShifts: totalShifts ?? this.totalShifts,
       );
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -80,13 +77,13 @@ class UserModel {
         userRole: json["user_role"] ?? '',
         userName: json["user_name"] ?? '',
         isDeleted: json["is_deleted"] ?? false,
-        totalTrips: json["total_trips"] ?? 0,
-        totalEarnings: json["total_earnings"]?.toDouble() ?? 0.0,
-        wallet: json["wallet"]?.toDouble() ?? 0.0,
+        // totalTrips: json["total_trips"] ?? 0,
+        // totalEarnings: json["total_earnings"]?.toDouble() ?? 0.0,
+        // wallet: json["wallet"]?.toDouble() ?? 0.0,
         status: json["status"] ?? '',
         isBlocked: json["is_blocked"] ?? '',
-        targetTrips: json["target_trips"] ?? 0,
-        totalShifts: json["total_shifts"] ?? 0,
+        // targetTrips: json["target_trips"] ?? 0,
+        // totalShifts: json["total_shifts"] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -98,12 +95,12 @@ class UserModel {
         "user_role": userRole,
         "user_name": userName,
         "is_deleted": isDeleted,
-        "total_trips": totalTrips,
-        "total_earnings": totalEarnings,
-        "wallet": wallet,
+        // "total_trips": totalTrips,
+        // "total_earnings": totalEarnings,
+        // "wallet": wallet,
         "status": status,
         "is_blocked": isBlocked,
-        "target_trips": targetTrips,
-        "total_shifts": totalShifts,
+        // "target_trips": targetTrips,
+        // "total_shifts": totalShifts,
       };
 }
