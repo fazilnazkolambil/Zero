@@ -12,6 +12,7 @@ import 'package:zero/adminPages/screens/admin_bottom_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/driverPages/driver_bottom_page.dart';
+import 'package:zero/guestPages/g_admin_bottombar.dart';
 import 'package:zero/models/user_model.dart';
 
 enum AuthState {
@@ -261,7 +262,7 @@ class _AuthPageState extends State<AuthPage> {
                         : 'Enter your Mobile number',
                     textAlign: TextAlign.left,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: w * 0.04,
                     ),
                   ),
@@ -421,9 +422,9 @@ class _AuthPageState extends State<AuthPage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             disabledForegroundColor:
-                                Colors.white.withOpacity(0.5),
+                                Colors.white.withValues(alpha: 0.5),
                             disabledBackgroundColor:
-                                ColorConst.primaryColor.withOpacity(0.5),
+                                ColorConst.primaryColor.withValues(alpha: 0.5),
                           ),
                           child: _getButtonChild(),
                         ),
@@ -431,6 +432,28 @@ class _AuthPageState extends State<AuthPage> {
                     ],
                   ),
                 ),
+                SizedBox(height: h * 0.03),
+                Center(
+                  child: TextButton(
+                    style: ButtonStyle(
+                        elevation: const WidgetStatePropertyAll(2),
+                        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(w * 0.03))),
+                        shadowColor: const WidgetStatePropertyAll(
+                            ColorConst.primaryColor),
+                        foregroundColor: const WidgetStatePropertyAll(
+                            ColorConst.primaryColor),
+                        backgroundColor: const WidgetStatePropertyAll(
+                            ColorConst.backgroundColor)),
+                    onPressed: () => Navigator.pushAndRemoveUntil(
+                      context,
+                      CupertinoPageRoute(
+                          builder: (context) => const GuestAdminBottomBar()),
+                      (route) => false,
+                    ),
+                    child: const Text('Try the app'),
+                  ),
+                )
               ],
             ),
           ),

@@ -1,16 +1,13 @@
-import 'dart:developer';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:zero/auth/auth_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/driverPages/driver_notifications.dart';
+import 'package:zero/driverPages/wallet_page.dart';
 import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/rent_model.dart';
 import 'package:zero/models/vehicle_model.dart';
@@ -42,7 +39,6 @@ class _DriverHomePageState extends State<DriverHomePage> {
       currentDriver =
           DriverModel.fromJson(value.data() as Map<String, dynamic>);
     });
-    log(currentDriver!.toJson().toString());
     if (currentDriver!.onRent.isNotEmpty) {
       await FirebaseFirestore.instance
           .collection('organisations')
@@ -116,11 +112,18 @@ class _DriverHomePageState extends State<DriverHomePage> {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications, color: ColorConst.textColor),
-          onPressed: () {},
+          onPressed: () => Navigator.push(
+              context,
+              CupertinoPageRoute(
+                  builder: (context) => const DriverNotifications())),
         ),
         IconButton(
-          icon: const Icon(Icons.wallet, color: ColorConst.textColor),
-          onPressed: () {},
+          icon: Icon(Icons.wallet,
+              color: currentDriver!.wallet < 0
+                  ? ColorConst.errorColor
+                  : ColorConst.successColor),
+          onPressed: () => Navigator.push(context,
+              CupertinoPageRoute(builder: (context) => const WalletPage())),
         ),
       ],
     );
@@ -186,135 +189,175 @@ class _DriverHomePageState extends State<DriverHomePage> {
                       ),
                     )
                   : Expanded(
-                      child: ListView.builder(
-                        // shrinkWrap: true,
-                        // physics: const NeverScrollableScrollPhysics(),
-                        itemCount: snapshot.data!.length,
-                        itemBuilder: (context, index) {
-                          VehicleModel vehicle = snapshot.data![index];
-                          return vehicle.vehicleNumber
-                                  .toLowerCase()
-                                  .contains(searchkey.toLowerCase())
-                              ? Container(
-                                  height: h * 0.2,
-                                  padding: EdgeInsets.all(w * 0.03),
-                                  margin: EdgeInsets.all(w * 0.03),
-                                  decoration: BoxDecoration(
-                                    color: ColorConst.boxColor,
-                                    borderRadius:
-                                        BorderRadius.circular(w * 0.03),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Text(vehicle.vehicleNumber,
-                                          style: TextStyle(
-                                              fontSize: w * 0.06,
-                                              color: ColorConst.textColor,
-                                              fontWeight: FontWeight.bold)),
-                                      Text(
-                                          'Remaining trips : ${vehicle.targetTrips - vehicle.weeklyTrips}',
-                                          style: const TextStyle(
-                                              color: ColorConst.textColor,
-                                              fontWeight: FontWeight.bold)),
-                                      PopupMenuButton(
-                                        color: ColorConst.boxColor,
-                                        onSelected: (shiftValue) async {
-                                          var getRents = await FirebaseFirestore
-                                              .instance
-                                              .collection('organisations')
-                                              .doc(currentUser!.organisationId)
-                                              .collection('rents')
-                                              .get();
-                                          String rentId =
-                                              'rentid${getRents.size}';
-                                          await FirebaseFirestore.instance
-                                              .collection('organisations')
-                                              .doc(
-                                                  currentDriver!.organisationId)
-                                              .collection('rents')
-                                              .doc(rentId)
-                                              .set(RentModel(
-                                                      rentId: rentId,
-                                                      driverId: currentDriver!
-                                                          .driverId,
-                                                      driverName: currentDriver!
-                                                          .driverName,
-                                                      vehicleId:
-                                                          vehicle.vehicleId,
-                                                      vehicleNumber:
-                                                          vehicle.vehicleNumber,
-                                                      startTime:
-                                                          Timestamp.now(),
-                                                      vehicleRent: vehicle.rent,
-                                                      selectedShift:
-                                                          int.parse(shiftValue),
-                                                      totalTrips: 0,
-                                                      totalEarnings: 0,
-                                                      cashCollected: 0,
-                                                      totaltoPay: 0,
-                                                      refund: 0,
-                                                      rentStatus: 'ongoing')
-                                                  .toJson());
-                                          await FirebaseFirestore.instance
-                                              .collection('organisations')
-                                              .doc(currentUser!.organisationId)
-                                              .collection('vehicles')
-                                              .doc(vehicle.vehicleId)
-                                              .update({
-                                            'driver': currentUser!.userId,
-                                            'on_duty': true,
-                                            'start_time': DateTime.now(),
-                                            'selected_shift':
-                                                int.parse(shiftValue)
-                                          });
-                                          await FirebaseFirestore.instance
-                                              .collection('organisations')
-                                              .doc(currentUser!.organisationId)
-                                              .collection('drivers')
-                                              .doc(currentUser!.userId)
-                                              .update({'on_rent': rentId});
-                                          await getDriverDetails();
-                                        },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                              value: "1",
-                                              child: Text(
-                                                "12 hrs",
+                      child: currentDriver!.wallet < 0
+                          ? const Center(
+                              child: Text(
+                                  'Recharge your wallet before starting a duty',
+                                  style: TextStyle(
+                                      color: ColorConst.errorColor,
+                                      fontWeight: FontWeight.bold)),
+                            )
+                          : ListView.builder(
+                              // shrinkWrap: true,
+                              // physics: const NeverScrollableScrollPhysics(),
+                              itemCount: snapshot.data!.length,
+                              itemBuilder: (context, index) {
+                                VehicleModel vehicle = snapshot.data![index];
+                                return vehicle.vehicleNumber
+                                        .toLowerCase()
+                                        .contains(searchkey.toLowerCase())
+                                    ? Container(
+                                        height: h * 0.2,
+                                        padding: EdgeInsets.all(w * 0.03),
+                                        margin: EdgeInsets.all(w * 0.03),
+                                        decoration: BoxDecoration(
+                                          color: ColorConst.boxColor,
+                                          borderRadius:
+                                              BorderRadius.circular(w * 0.03),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            Text(vehicle.vehicleNumber,
                                                 style: TextStyle(
-                                                    color:
-                                                        ColorConst.textColor),
-                                              )),
-                                          const PopupMenuItem(
-                                              value: "2",
-                                              child: Text(
-                                                "24 hrs",
-                                                style: TextStyle(
-                                                    color:
-                                                        ColorConst.textColor),
-                                              )),
-                                        ],
-                                        child: const ElevatedButton(
-                                            style: ButtonStyle(
-                                                backgroundColor:
-                                                    WidgetStatePropertyAll(
-                                                        ColorConst
-                                                            .primaryColor)),
-                                            onPressed: null,
-                                            child: Text(
-                                              'Start duty',
-                                              style: TextStyle(
-                                                  color: ColorConst
-                                                      .backgroundColor,
-                                                  fontWeight: FontWeight.bold),
-                                            )),
-                                      )
-                                    ],
-                                  ))
-                              : const SizedBox();
-                        },
-                      ),
+                                                    fontSize: w * 0.06,
+                                                    color: ColorConst.textColor,
+                                                    fontWeight:
+                                                        FontWeight.bold)),
+                                            Text(
+                                                'Remaining trips : ${vehicle.targetTrips - vehicle.weeklyTrips}',
+                                                style: const TextStyle(
+                                                    color: ColorConst.textColor,
+                                                    fontWeight:
+                                                        FontWeight.bold)),
+                                            PopupMenuButton(
+                                              color: ColorConst.boxColor,
+                                              onSelected: (shiftValue) async {
+                                                var getRents =
+                                                    await FirebaseFirestore
+                                                        .instance
+                                                        .collection(
+                                                            'organisations')
+                                                        .doc(currentUser!
+                                                            .organisationId)
+                                                        .collection('rents')
+                                                        .get();
+                                                String rentId =
+                                                    'rentid${getRents.size}';
+                                                await FirebaseFirestore.instance
+                                                    .collection('organisations')
+                                                    .doc(currentDriver!
+                                                        .organisationId)
+                                                    .collection('rents')
+                                                    .doc(rentId)
+                                                    .set(RentModel(
+                                                            rentId: rentId,
+                                                            driverId:
+                                                                currentDriver!
+                                                                    .driverId,
+                                                            driverName:
+                                                                currentDriver!
+                                                                    .driverName,
+                                                            vehicleId: vehicle
+                                                                .vehicleId,
+                                                            vehicleNumber: vehicle
+                                                                .vehicleNumber,
+                                                            startTime:
+                                                                Timestamp.now(),
+                                                            vehicleRent:
+                                                                vehicle.rent,
+                                                            selectedShift:
+                                                                int.parse(
+                                                                    shiftValue),
+                                                            totalTrips: 0,
+                                                            totalEarnings: 0,
+                                                            cashCollected: 0,
+                                                            totaltoPay: 0,
+                                                            refund: 0,
+                                                            rentStatus:
+                                                                'ongoing')
+                                                        .toJson());
+                                                await FirebaseFirestore.instance
+                                                    .collection('organisations')
+                                                    .doc(currentUser!
+                                                        .organisationId)
+                                                    .collection('vehicles')
+                                                    .doc(vehicle.vehicleId)
+                                                    .update({
+                                                  'driver': currentUser!.userId,
+                                                  'on_duty': true,
+                                                  'start_time': DateTime.now(),
+                                                  'selected_shift':
+                                                      int.parse(shiftValue)
+                                                });
+                                                await FirebaseFirestore.instance
+                                                    .collection('organisations')
+                                                    .doc(currentUser!
+                                                        .organisationId)
+                                                    .collection('drivers')
+                                                    .doc(currentUser!.userId)
+                                                    .update(
+                                                        {'on_rent': rentId});
+                                                await getDriverDetails();
+                                              },
+                                              itemBuilder: (context) => [
+                                                PopupMenuItem(
+                                                    value: "1",
+                                                    child: Text(
+                                                      "12 hrs",
+                                                      style: TextStyle(
+                                                          shadows: const [
+                                                            Shadow(
+                                                                blurRadius: 5,
+                                                                color: ColorConst
+                                                                    .primaryColor)
+                                                          ],
+                                                          color: ColorConst
+                                                              .textColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: w * 0.045),
+                                                    )),
+                                                PopupMenuItem(
+                                                    value: "2",
+                                                    child: Text(
+                                                      "24 hrs",
+                                                      style: TextStyle(
+                                                          shadows: const [
+                                                            Shadow(
+                                                                blurRadius: 5,
+                                                                color: ColorConst
+                                                                    .primaryColor)
+                                                          ],
+                                                          color: ColorConst
+                                                              .textColor,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: w * 0.045),
+                                                    )),
+                                              ],
+                                              child: const ElevatedButton(
+                                                  style: ButtonStyle(
+                                                      backgroundColor:
+                                                          WidgetStatePropertyAll(
+                                                              ColorConst
+                                                                  .primaryColor)),
+                                                  onPressed: null,
+                                                  child: Text(
+                                                    'Start duty',
+                                                    style: TextStyle(
+                                                        color: ColorConst
+                                                            .backgroundColor,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  )),
+                                            )
+                                          ],
+                                        ))
+                                    : const SizedBox();
+                              },
+                            ),
                     );
             }),
       ],
@@ -648,6 +691,9 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                               gravity: ToastGravity.TOP,
                                             );
                                           } else {
+                                            int selectedShift = addShift
+                                                ? rentModel!.selectedShift + 1
+                                                : rentModel!.selectedShift;
                                             double totaltoPay = -(double.parse(
                                                         totalEarningscontroller
                                                             .text) +
@@ -656,7 +702,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                     double.parse(
                                                         cashCollectedcontroller
                                                             .text)) +
-                                                ((rentModel!.selectedShift) *
+                                                (selectedShift *
                                                     (rentModel!.vehicleRent));
 
                                             await FirebaseFirestore.instance
@@ -667,6 +713,7 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                 .doc(rentModel!.rentId)
                                                 .update({
                                               'end_time': Timestamp.now(),
+                                              'selected_shift': selectedShift,
                                               'total_trips': int.parse(
                                                   totalTripsController.text),
                                               'total_earnings': double.parse(
@@ -677,15 +724,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                   refundController.text),
                                               'total_to_pay': totaltoPay,
                                               'rent_status': 'COMPLETED',
-                                              'weekly_trips':
-                                                  FieldValue.increment(
-                                                      int.parse(
-                                                          totalTripsController
-                                                              .text)),
                                               'fuel_expense':
                                                   fuelExpensesController
                                                           .text.isEmpty
-                                                      ? 0
+                                                      ? 0.toDouble()
                                                       : double.parse(
                                                           fuelExpensesController
                                                               .text)
@@ -734,7 +776,10 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                       refundController.text)),
                                               'total_shifts':
                                                   FieldValue.increment(
-                                                      rentModel!.selectedShift),
+                                                      selectedShift),
+                                              'weekly_shifts':
+                                                  FieldValue.increment(
+                                                      selectedShift),
                                               'vehicle_rent':
                                                   FieldValue.increment(
                                                       rentModel!.selectedShift *
@@ -745,9 +790,16 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                       int.parse(
                                                           totalTripsController
                                                               .text)),
-                                              'fuel_expense':
+                                              'weekly_trips':
                                                   FieldValue.increment(
-                                                      double.parse(
+                                                      int.parse(
+                                                          totalTripsController
+                                                              .text)),
+                                              'fuel_expense': FieldValue.increment(
+                                                  fuelExpensesController
+                                                          .text.isEmpty
+                                                      ? 0
+                                                      : double.parse(
                                                           fuelExpensesController
                                                               .text)),
                                               'wallet': FieldValue.increment(
@@ -1004,10 +1056,14 @@ class _DriverHomePageState extends State<DriverHomePage> {
                                                         int.parse(
                                                             totalTripsController
                                                                 .text)),
-                                                'fuel_expense': FieldValue
-                                                    .increment(double.parse(
+                                                'fuel_expense':
+                                                    FieldValue.increment(
                                                         fuelExpensesController
-                                                            .text)),
+                                                                .text.isEmpty
+                                                            ? 0
+                                                            : double.parse(
+                                                                fuelExpensesController
+                                                                    .text)),
                                               });
                                               Fluttertoast.showToast(
                                                 msg: "Shift canceled!",

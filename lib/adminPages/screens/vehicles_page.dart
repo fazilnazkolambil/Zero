@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:zero/adminPages/screens/admin_notifications.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/vehicle_model.dart';
@@ -68,6 +69,15 @@ class _VehiclesPageState extends State<VehiclesPage> {
               color: ColorConst.textColor, fontWeight: FontWeight.bold)),
       backgroundColor: ColorConst.boxColor,
       elevation: 2,
+      actions: [
+        IconButton(
+            onPressed: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const AdminNotifications(),
+                )),
+            icon: const Icon(Icons.notifications, color: ColorConst.textColor))
+      ],
     );
   }
 
@@ -488,6 +498,9 @@ class _VehiclesPageState extends State<VehiclesPage> {
                             if (value != null) {
                               setState(() {
                                 rentalPlan = value;
+                                if (value == 'plan_wagonr') {
+                                  rentController.text = '500';
+                                }
                                 getVehicles();
                               });
                             }

@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +7,16 @@ import 'package:zero/auth/auth_page.dart';
 import 'package:zero/auth/switch_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/driverPages/razorpay_page.dart';
 
-class DriverProfilePage extends StatelessWidget {
+class DriverProfilePage extends StatefulWidget {
   const DriverProfilePage({super.key});
 
+  @override
+  State<DriverProfilePage> createState() => _DriverProfilePageState();
+}
+
+class _DriverProfilePageState extends State<DriverProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,7 +178,12 @@ class DriverProfilePage extends StatelessWidget {
                                     ColorConst.successColor),
                                 backgroundColor: const WidgetStatePropertyAll(
                                     ColorConst.boxColor)),
-                            onPressed: () {},
+                            onPressed: () => showModalBottomSheet(
+                                context: context,
+                                isDismissible: false,
+                                backgroundColor: ColorConst.boxColor,
+                                builder: (context) => RazorPayBottomSheet(
+                                    amount: -currentDriver!.wallet)),
                             child: const Text('Pay now'))
                     ],
                   )
@@ -184,6 +194,22 @@ class DriverProfilePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  razorPayBottomSheet() {
+    return showModalBottomSheet(
+        context: context,
+        backgroundColor: ColorConst.boxColor,
+        isDismissible: false,
+        isScrollControlled: true,
+        builder: (context) {
+          return Container(
+            padding: EdgeInsets.all(w * 0.03),
+            child: Column(
+              children: [],
+            ),
+          );
+        });
   }
 
   Widget progressDetails() {
@@ -311,9 +337,10 @@ class DriverProfilePage extends StatelessWidget {
             _buildTextRow('Name', currentDriver!.driverName),
             _buildTextRow('Mobile number', currentDriver!.mobileNumber),
             _buildTextRow('status', currentDriver!.status.toUpperCase()),
-            _buildTextRow('Organisation', currentDriver!.organisationName),
+            if (currentDriver!.organisationName.isNotEmpty)
+              _buildTextRow('Organisation', currentDriver!.organisationName),
             _buildTextRow(
-                'Created on',
+                'Joined on',
                 DateFormat.yMMMEd()
                     .format(DateTime.parse(currentDriver!.driverAddedOn))),
           ],

@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zero/adminPages/screens/admin_notifications.dart';
 import 'package:zero/auth/auth_page.dart';
 import 'package:zero/auth/switch_page.dart';
 import 'package:zero/core/const_page.dart';
@@ -11,8 +12,7 @@ import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/organisation_model.dart';
 
 class OrganisationPage extends StatefulWidget {
-  final OrganisationModel organisation;
-  const OrganisationPage({super.key, required this.organisation});
+  const OrganisationPage({super.key});
 
   @override
   State<OrganisationPage> createState() => _OrganisationPageState();
@@ -84,6 +84,15 @@ class _OrganisationPageState extends State<OrganisationPage> {
               color: ColorConst.textColor, fontWeight: FontWeight.bold)),
       backgroundColor: ColorConst.boxColor,
       elevation: 2,
+      actions: [
+        IconButton(
+            onPressed: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const AdminNotifications(),
+                )),
+            icon: const Icon(Icons.notifications, color: ColorConst.textColor))
+      ],
     );
   }
 
@@ -113,13 +122,10 @@ class _OrganisationPageState extends State<OrganisationPage> {
             SizedBox(
               height: h * 0.02,
             ),
+            _buildTextRow('Organisation Name', org.organisationName),
+            _buildTextRow('Fleet', org.fleet.fleetName),
             _buildTextRow(
-                'Organisation Name', widget.organisation.organisationName),
-            _buildTextRow('Fleet', widget.organisation.fleet.fleetName),
-            _buildTextRow(
-                'Created on',
-                DateFormat('dd-MM-yyyy')
-                    .format(DateTime.parse(widget.organisation.createdOn))),
+                'Created on', DateFormat('dd-MM-yyyy').format(org.createdOn)),
           ],
         ),
       ),
@@ -152,9 +158,9 @@ class _OrganisationPageState extends State<OrganisationPage> {
             SizedBox(
               height: h * 0.02,
             ),
-            // _buildTextRow('Current Plan', widget.organisation.fleet.plan),
-            _buildTextRow('Insurance',
-                widget.organisation.fleet.planWagonr.insurance.toString()),
+            _buildTextRow('Current Plan', org.fleet.fleetPlan.plan),
+            _buildTextRow(
+                'Insurance', org.fleet.fleetPlan.insurance.toString()),
             Padding(
               padding: EdgeInsets.symmetric(
                   vertical: w * 0.03, horizontal: w * 0.02),
@@ -169,11 +175,9 @@ class _OrganisationPageState extends State<OrganisationPage> {
                   expanded: ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount:
-                        widget.organisation.fleet.planWagonr.rentalPlans.length,
+                    itemCount: org.fleet.fleetPlan.rent.length,
                     itemBuilder: (context, index) {
-                      List<RentalPlan> plan =
-                          widget.organisation.fleet.planWagonr.rentalPlans;
+                      List<Rent> plan = org.fleet.fleetPlan.rent;
                       return index == plan.length - 1
                           ? _buildTextRow(
                               '${plan[index].trip}+ ', "${plan[index].rent}/-")
@@ -228,14 +232,10 @@ class _OrganisationPageState extends State<OrganisationPage> {
             SizedBox(
               height: h * 0.02,
             ),
-            _buildTextRow(
-                'Organization name', widget.organisation.organisationName),
             _buildTextRow('Mobile number', currentUser!.mobileNumber),
             _buildTextRow('Admin', currentUser!.userName),
             _buildTextRow(
-                'Created on',
-                DateFormat.yMMMEd()
-                    .format(DateTime.parse(widget.organisation.createdOn))),
+                'Created on', DateFormat.yMMMEd().format(org.createdOn)),
           ],
         ),
       ),

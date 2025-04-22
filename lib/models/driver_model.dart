@@ -15,6 +15,7 @@ class DriverModel {
   int targetTrips;
   int weeklyTrips;
   int totalShifts;
+  int weeklyShifts;
   String organisationName;
   String driverAddedOn;
   double fuelExpense;
@@ -36,6 +37,7 @@ class DriverModel {
       required this.organisationId,
       required this.targetTrips,
       required this.weeklyTrips,
+      required this.weeklyShifts,
       required this.totalShifts,
       required this.organisationName,
       required this.driverAddedOn,
@@ -57,6 +59,7 @@ class DriverModel {
     String? isBlocked,
     String? organisationId,
     int? targetTrips,
+    int? weeklyShifts,
     int? totalShifts,
     String? organisationName,
     String? driverAddedOn,
@@ -80,6 +83,7 @@ class DriverModel {
         organisationId: organisationId ?? this.organisationId,
         targetTrips: targetTrips ?? this.targetTrips,
         totalShifts: totalShifts ?? this.totalShifts,
+        weeklyShifts: weeklyShifts ?? this.weeklyShifts,
         driverAddedOn: driverAddedOn ?? this.driverAddedOn,
         organisationName: organisationName ?? this.organisationName,
         fuelExpense: fuelExpense ?? this.fuelExpense,
@@ -103,6 +107,7 @@ class DriverModel {
         organisationId: json["organisation_id"] ?? '',
         targetTrips: json["target_trips"] ?? 0,
         totalShifts: json["total_shifts"] ?? 0,
+        weeklyShifts: json["weekly_shifts"] ?? 0,
         driverAddedOn: json["driver_added_on"] ?? DateTime.now().toString(),
         organisationName: json["organisation_name"] ?? '',
         fuelExpense: json["fuel_expense"] ?? 0,
@@ -125,6 +130,7 @@ class DriverModel {
         "is_blocked": isBlocked,
         "organisation_id": organisationId,
         "target_trips": targetTrips,
+        "weekly_shifts": weeklyShifts,
         "total_shifts": totalShifts,
         "driver_added_on": driverAddedOn,
         "organisation_name": organisationName,

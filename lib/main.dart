@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,63 +58,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // addAdmin();
     _initializeApp();
-  }
-
-  addAdmin() async {
-    await FirebaseFirestore.instance
-        .collection('organisations')
-        .doc('N5DGSiAVziV3dOtuuewi')
-        .collection('drivers')
-        .doc("zer0user0")
-        .set(DriverModel(
-                isDeleted: false,
-                totalTrips: 0,
-                totalEarnings: 0,
-                cashCollected: 0,
-                refund: 0,
-                wallet: 0,
-                onRent: '',
-                driverName: 'Fazil naz Kolambil',
-                mobileNumber: '+919487022519',
-                status: 'ACTIVE',
-                driverId: 'zer0user0',
-                isBlocked: '',
-                organisationId: 'N5DGSiAVziV3dOtuuewi',
-                targetTrips: 70,
-                totalShifts: 0,
-                organisationName: 'Zero uber',
-                driverAddedOn: '2025-04-07 18:48:59.601390',
-                weeklyTrips: 0,
-                fuelExpense: 0,
-                vehicleRent: 0)
-            .toJson());
-    // await FirebaseFirestore.instance.collection('users').doc('zer0user1').set({
-    //   'is_blocked': '',
-    //   'is_deleted': false,
-    //   'mobile_number': '+919487022519',
-    //   'organisation_id': 'N5DGSiAVziV3dOtuuewi',
-    //   'organisation_name': 'Zero uber',
-    //   'status': 'ACTIVE',
-    //   'user_created_on': DateTime.now().toString(),
-    //   'user_id': 'zer0user1',
-    //   'user_name': 'Fazil naz Kolambil',
-    //   'user_role': 'ADMIN'
-    // });
-    // try {
-    //   var user = await FirebaseFirestore.instance
-    //       .collection('users')
-    //       .doc('zer0user1')
-    //       .get();
-    //   currentUser = UserModel2.fromJson(user.data() as Map<String, dynamic>);
-    //   log(currentUser!.toJson().toString());
-    //   SharedPreferences prefs = await SharedPreferences.getInstance();
-    //   prefs.setBool('isLogged', true);
-    //   prefs.setString('currentUser', json.encode(user.data()));
-    // } catch (e) {
-    //   print(e);
-    // }
   }
 
   Future<void> _initializeApp() async {
@@ -145,7 +87,6 @@ class _SplashScreenState extends State<SplashScreen> {
               _navigateTo(const DriverBottomBar());
             }
           } catch (e) {
-            print("Error parsing user data: $e");
             await prefs.clear();
             _navigateTo(const AuthPage());
           }
@@ -156,7 +97,6 @@ class _SplashScreenState extends State<SplashScreen> {
         _navigateTo(const AuthPage());
       }
     } catch (e) {
-      print("Error during authentication check: $e");
       _navigateTo(const AuthPage());
     }
   }
@@ -172,21 +112,12 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ColorConst.backgroundColor,
+      backgroundColor: Colors.black,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              ImageConst.logo,
-              width: w * 0.5,
-              height: w * 0.5,
-            ),
-            const SizedBox(height: 30),
-            const CupertinoActivityIndicator(
-              color: ColorConst.primaryColor,
-            ),
-          ],
+        child: Image.asset(
+          ImageConst.logo,
+          width: w * 0.5,
+          height: w * 0.5,
         ),
       ),
     );

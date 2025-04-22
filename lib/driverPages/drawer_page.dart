@@ -109,7 +109,6 @@ class DrawerPage extends StatelessWidget {
               color: ColorConst.primaryColor,
             ),
             title: const Text('Logout', style: TextStyle(color: Colors.grey)),
-            // onTap: () => _logOutDialog(),
           ),
           Center(
             child: Text(
@@ -123,6 +122,5 @@ class DrawerPage extends StatelessWidget {
         ],
       ),
     );
-    ;
   }
 }

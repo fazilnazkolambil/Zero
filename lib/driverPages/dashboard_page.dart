@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:expandable/expandable.dart';
+import 'package:zero/driverPages/driver_notifications.dart';
+import 'package:zero/driverPages/wallet_page.dart';
 import 'package:zero/models/rent_model.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -125,7 +127,25 @@ class _DashboardPageState extends State<DashboardPage> {
           style: TextStyle(
               color: ColorConst.textColor, fontWeight: FontWeight.bold)),
       backgroundColor: ColorConst.boxColor,
+      foregroundColor: ColorConst.textColor,
       elevation: 2,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications, color: ColorConst.textColor),
+          onPressed: () => Navigator.push(
+              context,
+              CupertinoPageRoute(
+                  builder: (context) => const DriverNotifications())),
+        ),
+        IconButton(
+          icon: Icon(Icons.wallet,
+              color: currentDriver!.wallet < 0
+                  ? ColorConst.errorColor
+                  : ColorConst.successColor),
+          onPressed: () => Navigator.push(context,
+              CupertinoPageRoute(builder: (context) => const WalletPage())),
+        ),
+      ],
     );
   }
 
@@ -169,8 +189,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget tripCompletiontracking() {
     int totalTrips = rentModels.fold(0, (trips, a) => trips + a.totalTrips);
-    final tripCompletion = totalTrips /
-        (currentDriver!.targetTrips > 0 ? currentDriver!.targetTrips : 1);
+    int targetTrips = currentDriver!.targetTrips * currentDriver!.weeklyShifts;
+    final tripCompletion = totalTrips / (targetTrips > 0 ? targetTrips : 1);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -216,7 +236,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: Text(
-                    '${totalTrips.toString()} / ${currentDriver!.targetTrips.toString()} trips',
+                    '${totalTrips.toString()} / ${targetTrips.toString()} trips',
                     style: const TextStyle(
                       color: Colors.grey,
                       fontSize: 12,

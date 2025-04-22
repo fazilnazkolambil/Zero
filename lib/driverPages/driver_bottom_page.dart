@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:zero/core/const_page.dart';
@@ -34,6 +33,7 @@ class _MyHomePageState extends State<DriverBottomBar> {
     return Scaffold(
       body: bottomBarPages[selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         enableFeedback: false,
         backgroundColor: ColorConst.boxColor,
         selectedItemColor: ColorConst.textColor,
@@ -43,6 +43,9 @@ class _MyHomePageState extends State<DriverBottomBar> {
               icon: Icon(CupertinoIcons.home), label: 'Home'),
           BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
+          // BottomNavigationBarItem(
+          //     icon: Icon(Icons.account_balance_wallet_outlined),
+          //     label: 'Transactions'),
           BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.person), label: 'Profile'),
         ],

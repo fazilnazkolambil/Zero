@@ -1,13 +1,17 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expandable/expandable.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:zero/adminPages/screens/admin_notifications.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/driver_model.dart';
 import 'package:zero/models/rent_model.dart';
+import 'package:zero/models/transaction_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -43,6 +47,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     for (var rents in rentcollection.docs) {
       rentModels.add(RentModel.fromMap(rents.data()));
     }
+    log(rentModels.toString());
     setState(() {
       isLoading = false;
     });
@@ -84,6 +89,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
+  List<TransactionModel> transactionModel = [];
+  Future getPayments() async {
+    transactionModel.clear();
+    setState(() {
+      isLoading = true;
+    });
+    var transactions = await FirebaseFirestore.instance
+        .collection('organisations')
+        .doc(currentUser!.organisationId)
+        .collection('payments')
+        .where('status', isEqualTo: 'SUCCESS')
+        .get();
+    for (var transaction in transactions.docs) {
+      transactionModel.add(TransactionModel.fromMap(transaction.data()));
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
   void previousWeek() {
     setState(() {
       weekStart = weekStart.subtract(const Duration(days: 7));
@@ -108,12 +133,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return '${formatter.format(weekStart)} - ${formatter.format(weekEnd)}';
   }
 
+  double fleetRent = 0;
+
   @override
   void initState() {
     // getFleetPlan();
     getRents();
     getVehicles();
     getDrivers();
+    getPayments();
     super.initState();
   }
 
@@ -141,6 +169,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           children: [
                             rentStats(),
                             SizedBox(height: h * 0.01),
+                            incomeStats(),
+                            SizedBox(height: h * 0.01),
                             revenueStats(),
                             SizedBox(height: h * 0.01),
                             buildRentList(),
@@ -159,6 +189,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
               color: ColorConst.textColor, fontWeight: FontWeight.bold)),
       backgroundColor: ColorConst.boxColor,
       elevation: 2,
+      actions: [
+        IconButton(
+            onPressed: () => Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (context) => const AdminNotifications(),
+                )),
+            icon: const Icon(Icons.notifications, color: ColorConst.textColor))
+      ],
     );
   }
 
@@ -200,47 +239,165 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget rentStats() {
-    double totalRent = rentModels.isEmpty
+    final Map<String, Map<String, dynamic>> vehicleStats = {};
+    for (var vehicle in vehicleModels) {
+      vehicleStats[vehicle.vehicleNumber] = {
+        'trips': vehicle.weeklyTrips,
+        'deleted_on': vehicle.droppedOn == null
+            ? vehicle.droppedOn
+            : vehicle.droppedOn!.toDate(),
+        'added_on': vehicle.addedOn.toDate()
+      };
+    }
+    final rentBreakdownMap = CommonWidgets().calculateWeeklyFleetRent(
+        vehicleStats: vehicleStats,
+        startDate: weekStart,
+        endDate: weekEnd ?? DateTime.now());
+    fleetRent = rentBreakdownMap.values
+        .map((v) => v['rent'] as int)
+        .fold(0, (a, rent) => a + rent);
+    double totalToGet = rentModels.isEmpty
+        ? 0
+        : rentModels.fold(0, (toGet, a) => toGet - a.totaltoPay);
+    double vehicleRent = rentModels.isEmpty
         ? 0
         : rentModels
             .map((item) => item.selectedShift * item.vehicleRent)
             .reduce((rent, element) => rent + element);
-    double totalToGet = rentModels.isEmpty
-        ? 0
-        : rentModels.fold(0, (toGet, a) => toGet + a.totaltoPay);
+    double onlineAmount = -totalToGet - vehicleRent;
+    double totaltoPay = fleetRent + onlineAmount;
+    return Card(
+      margin: EdgeInsets.symmetric(horizontal: w * 0.03, vertical: w * 0.03),
+      color: ColorConst.boxColor,
+      child: Padding(
+        padding: EdgeInsets.all(w * 0.05),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.car_rental_outlined,
+                        color: ColorConst.textColor),
+                    SizedBox(width: w * 0.03),
+                    const Text(
+                      'Fleet Statistics',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: ColorConst.textColor,
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                    style: ButtonStyle(
+                        elevation: const WidgetStatePropertyAll(2),
+                        shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(w * 0.03))),
+                        shadowColor: const WidgetStatePropertyAll(
+                            ColorConst.primaryColor),
+                        foregroundColor: const WidgetStatePropertyAll(
+                            ColorConst.primaryColor),
+                        backgroundColor:
+                            const WidgetStatePropertyAll(ColorConst.boxColor)),
+                    onPressed: () => showRentBreakdownBottomSheet(
+                        fleetRent: fleetRent,
+                        onlineBalance: onlineAmount,
+                        rentData: rentBreakdownMap),
+                    child: const Text('Details'))
+              ],
+            ),
+            SizedBox(height: h * 0.02),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: [
+                    Text(
+                      fleetRent.toStringAsFixed(2),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: ColorConst.textColor),
+                    ),
+                    SizedBox(height: w * 0.03),
+                    const Text(
+                      'Fleet rent',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    Text(
+                      (-onlineAmount).toStringAsFixed(2),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: ColorConst.textColor),
+                    ),
+                    SizedBox(height: w * 0.03),
+                    Text(
+                      onlineAmount <= 0 ? 'Online balance' : 'Cash balance',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    Text(
+                      totaltoPay.toStringAsFixed(2),
+                      style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: ColorConst.textColor),
+                    ),
+                    SizedBox(height: w * 0.03),
+                    const Text(
+                      'Total to pay',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget incomeStats() {
     double driversWallet = driverModels.isEmpty
         ? 0
         : driverModels.fold(0, (wallet, a) => wallet + a.wallet);
-    double paymentReceived = 0;
-    return Column(
+    double paymentReceived = transactionModel
+        .where((element) => element.paymentTime.toDate().isAfter(weekStart))
+        .where((element) => element.paymentTime.toDate().isBefore(weekEnd!))
+        .fold(0, (amount, a) => amount + a.amount);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildSummaryCard(
-                title: 'Vehicle rent',
-                value: '₹ ${totalRent.toStringAsFixed(2)}',
-                subtitle: 'Total rent for all vehicles'),
-            _buildSummaryCard(
-                title: 'Total to get',
-                value: '₹ ${totalToGet.toStringAsFixed(2)}',
-                subtitle: 'Total amount to get from drivers'),
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildSummaryCard(
-                title: 'Drivers to pay',
-                value: '₹ ${(-driversWallet).toStringAsFixed(2)}',
-                subtitle: 'Pending balance of drivers'),
-            _buildSummaryCard(
-                title: 'Available balance',
-                value: '₹ ${paymentReceived.toStringAsFixed(2)}',
-                subtitle: 'Total payment received'),
-          ],
-        ),
+        _buildSummaryCard(
+            title: 'Drivers to pay',
+            value: '₹ ${(-driversWallet).toStringAsFixed(2)}',
+            subtitle: 'Pending balance of drivers'),
+        _buildSummaryCard(
+            title: 'Available balance',
+            value: '₹ ${paymentReceived.toStringAsFixed(2)}',
+            subtitle: 'Payment received this week'),
       ],
     );
   }
@@ -301,52 +458,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget revenueStats() {
-    List<int> tripsPerDay = [];
-    List<int> rentalDays = [];
-    Map rentalPlan = {};
-    double insurance = 0;
-    for (var vehicle in vehicleModels) {
-      rentalPlan = widget.fleet[vehicle.rentalPlan];
-      tripsPerDay.add(vehicle.weeklyTrips);
-      if (vehicle.droppedOn != null) {
-        insurance += rentalPlan['insurance'] ??
-            0 +
-                (vehicle.droppedOn!
-                        .toDate()
-                        .difference(vehicle.addedOn.toDate())
-                        .inDays) %
-                    7 *
-                    vehicleModels.length;
-        rentalDays.add((vehicle.droppedOn!
-                .toDate()
-                .difference(vehicle.addedOn.toDate())
-                .inDays) %
-            7);
-      } else {
-        insurance += rentalPlan['insurance'] ??
-            0 +
-                (DateTime.now().difference(vehicle.addedOn.toDate()).inDays) %
-                    7 *
-                    vehicleModels.length;
-        rentalDays.add(
-            (DateTime.now().difference(vehicle.addedOn.toDate()).inDays) % 7);
-      }
-    }
-    double totalToGet = rentModels.isEmpty
+    double vehicleRent = rentModels.isEmpty
         ? 0
-        : rentModels.fold(0, (toGet, a) => toGet - a.totaltoPay);
-    double fleetRent = CommonWidgets().calculateWeeklyRent(
-        rentalPlan: rentalPlan['rental_plans'] ?? [],
-        tripsPerDay: tripsPerDay,
-        rentalDays: rentalDays);
-    double totaltoPay = fleetRent + insurance;
-    double totalRevenue = totalToGet - totaltoPay;
+        : rentModels
+            .map((item) => item.selectedShift * item.vehicleRent)
+            .reduce((rent, element) => rent + element);
+    double totalRevenue = vehicleRent - fleetRent;
     List<double> chartData = List.filled(7, 0.0);
     for (var rent in rentModels) {
       DateTime date = rent.startTime.toDate();
       int weekdayIndex = date.weekday - 1;
 
-      double amount = -rent.totaltoPay.toDouble();
+      double amount = (rent.selectedShift * rent.vehicleRent).toDouble();
       chartData[weekdayIndex] += amount;
     }
     return Card(
@@ -387,6 +510,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Column(
                             children: [
                               Text(
+                                vehicleRent.toStringAsFixed(2),
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: ColorConst.textColor),
+                              ),
+                              SizedBox(height: w * 0.03),
+                              const Text(
+                                'Rent income',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Column(
+                            children: [
+                              Text(
                                 fleetRent.toStringAsFixed(2),
                                 style: const TextStyle(
                                     fontSize: 16,
@@ -406,30 +548,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Column(
                             children: [
                               Text(
-                                totaltoPay.toStringAsFixed(2),
-                                style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: ColorConst.textColor),
-                              ),
-                              SizedBox(height: w * 0.03),
-                              const Text(
-                                'Total to pay',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              Text(
                                 totalRevenue.toStringAsFixed(2),
-                                style: const TextStyle(
+                                style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
-                                    color: ColorConst.textColor),
+                                    color: totalRevenue <= 0
+                                        ? ColorConst.errorColor
+                                        : ColorConst.successColor),
                               ),
                               SizedBox(height: w * 0.03),
                               const Text(
@@ -493,12 +618,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               leftTitles: AxisTitles(
                                 sideTitles: SideTitles(
                                   showTitles: true,
-                                  reservedSize: w * 0.1,
+                                  reservedSize: w * 0.13,
                                   minIncluded: false,
                                   maxIncluded: false,
                                   getTitlesWidget: (value, meta) {
                                     return Text(
-                                      '${value.toString()[0]}k',
+                                      value.toStringAsFixed(0),
                                       style: const TextStyle(
                                           color: ColorConst.textColor),
                                     );
@@ -535,6 +660,109 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  void showRentBreakdownBottomSheet(
+      {required Map<String, dynamic> rentData,
+      required double fleetRent,
+      required double onlineBalance}) {
+    final vehicleIds = rentData.keys.toList();
+    double totalRent = fleetRent + onlineBalance;
+    showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: ColorConst.boxColor,
+        builder: (context) {
+          return Container(
+              padding: EdgeInsets.all(w * 0.05),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.all(w * 0.03),
+                      child: Text('Vehicle level calculation',
+                          style: TextStyle(
+                              color: ColorConst.textColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: w * 0.05)),
+                    ),
+                    SizedBox(
+                      height: h * 0.01,
+                    ),
+                    ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: vehicleIds.length,
+                      itemBuilder: (context, index) {
+                        final vehicleId = vehicleIds[index];
+                        final data = rentData[vehicleId]!;
+                        return ExpandablePanel(
+                            theme: const ExpandableThemeData(
+                                useInkWell: false,
+                                iconColor: ColorConst.textColor),
+                            header: _textRow(
+                                label: vehicleId,
+                                value: "₹ ${data['rent'].toStringAsFixed(2)}"),
+                            collapsed: const SizedBox(),
+                            expanded: Column(
+                              children: [
+                                _textRow(
+                                    label: 'Total trips',
+                                    value: data['trips'].toString()),
+                                _textRow(
+                                    label: 'rent per day',
+                                    value: data['per_day_rent'].toString()),
+
+                                _textRow(
+                                    label: 'Total weekdays',
+                                    value: data['rental_days'].toString()),
+
+                                _textRow(
+                                    label: 'Insurance',
+                                    value: (data['insurance'] *
+                                            data['rental_days'])
+                                        .toStringAsFixed(2)),
+                                // if(data['deleted_on']!=null)
+                                // _textRow(label: 'Dropped on', value: DateFormat('EEE, dd/MM').format(data['added_on'].toDate())),
+                              ],
+                            ));
+                      },
+                      separatorBuilder: (context, index) => Divider(
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    SizedBox(height: h * 0.01),
+                    const Divider(color: ColorConst.textColor),
+                    SizedBox(height: h * 0.01),
+                    _textRow(
+                        label: 'Fleet rent',
+                        value: fleetRent.toStringAsFixed(2)),
+                    _textRow(
+                        label: 'Online balance',
+                        value: onlineBalance.toStringAsFixed(2)),
+                    SizedBox(height: h * 0.01),
+                    Padding(
+                      padding: EdgeInsets.all(w * 0.03),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Total rent',
+                              style: TextStyle(
+                                  color: ColorConst.textColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: w * 0.04)),
+                          Text("₹ ${totalRent.toStringAsFixed(2)} /-",
+                              style: TextStyle(
+                                  color: ColorConst.textColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: w * 0.04)),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ));
+        });
+  }
+
   Widget buildRentList() {
     return Card(
       color: ColorConst.boxColor,
@@ -564,12 +792,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               itemCount: rentModels.length,
               itemBuilder: (context, index) {
                 DateTime date = rentModels[index].startTime.toDate();
-                double totalEarning = rentModels[index].totalEarnings +
-                    rentModels[index].refund -
-                    rentModels[index].cashCollected;
-                double balance = totalEarning -
-                    (rentModels[index].selectedShift *
-                        rentModels[index].vehicleRent);
                 return ExpandablePanel(
                   theme: ExpandableThemeData(
                     useInkWell: false,
