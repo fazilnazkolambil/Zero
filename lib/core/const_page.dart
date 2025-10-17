@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 
 class ColorConst {
-  static const backgroundColor = Color(0xFF1E1E1E);
-  static const primaryColor = Color(0xFFFFD700);
-  static const boxColor = Color(0xFF2A2A2A);
-  static const textColor = Colors.white;
-  static const successColor = Colors.green;
-  static const errorColor = Colors.redAccent;
+  static const secondaryButton = Color(0xFF3A3A3A);
+  static const Color primaryColor = Color.fromARGB(255, 237, 209, 0);
 }
 
 class ImageConst {
-  static const logo = 'assets/icons/zero_foreground.png';
+  static const logo = 'assets/icons/app_logo.png';
 }

@@ -1,111 +1,177 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class VehicleModel {
-  String vehicleNumber;
-  String driver;
-  Timestamp startTime;
-  Timestamp lastDriven;
-  bool onDuty;
-  String status;
-  String vehicleId;
-  bool isDeleted;
-  int totalTrips;
-  int weeklyTrips;
-  int targetTrips;
-  double rent;
-  int? selectedShift;
-  Timestamp addedOn;
-  Timestamp? droppedOn;
-  String rentalPlan;
+  final String vehicleId;
+  final String numberPlate;
+  final String vehicleModel;
+  final String ownerId;
+  final String? fleetId;
+  final String status;
+  final int addedOn;
+  final int updatedOn;
+  // final String vehicleImage;
+  final int? totalTrips;
+  final int? weeklyTrips;
+  final int? lastOnline;
+  final int targetTrips;
+  final VehicleOnDuty? onDuty;
+  final String? lastDriver;
+  final String? lastDriverId;
+  final dynamic vehicleRent;
 
   VehicleModel(
-      {required this.vehicleNumber,
-      required this.driver,
-      required this.startTime,
-      required this.lastDriven,
-      required this.addedOn,
-      this.droppedOn,
-      required this.onDuty,
+      {required this.vehicleId,
+      required this.numberPlate,
+      required this.vehicleModel,
+      required this.ownerId,
+      this.fleetId,
       required this.status,
-      required this.vehicleId,
-      required this.isDeleted,
-      required this.totalTrips,
-      required this.weeklyTrips,
+      required this.addedOn,
+      required this.updatedOn,
+      // required this.vehicleImage,
+      this.totalTrips,
+      this.weeklyTrips,
+      this.lastOnline,
       required this.targetTrips,
-      required this.rent,
-      this.selectedShift,
-      required this.rentalPlan});
+      this.onDuty,
+      this.lastDriver,
+      this.lastDriverId,
+      required this.vehicleRent});
+
+  /// CopyWith for immutability
   VehicleModel copyWith(
-          {String? vehicleNumber,
-          String? driver,
-          Timestamp? startTime,
-          Timestamp? lastDriven,
-          Timestamp? addedOn,
-          Timestamp? droppedOn,
-          bool? onDuty,
-          String? status,
-          String? vehicleId,
-          bool? isDeleted,
-          int? totalTrips,
-          int? weeklyTrips,
-          int? targetTrips,
-          double? rent,
-          int? selectedShift,
-          String? rentalPlan}) =>
-      VehicleModel(
-        vehicleNumber: vehicleNumber ?? this.vehicleNumber,
-        driver: driver ?? this.driver,
-        startTime: startTime ?? this.startTime,
-        lastDriven: lastDriven ?? this.lastDriven,
-        addedOn: addedOn ?? this.addedOn,
-        droppedOn: droppedOn ?? this.droppedOn,
-        onDuty: onDuty ?? this.onDuty,
-        status: status ?? this.status,
-        vehicleId: vehicleId ?? this.vehicleId,
-        isDeleted: isDeleted ?? this.isDeleted,
-        totalTrips: totalTrips ?? this.totalTrips,
-        weeklyTrips: weeklyTrips ?? this.weeklyTrips,
-        targetTrips: targetTrips ?? this.targetTrips,
-        rent: rent ?? this.rent,
-        selectedShift: selectedShift ?? this.selectedShift,
-        rentalPlan: rentalPlan ?? this.rentalPlan,
-      );
+      {String? vehicleId,
+      String? numberPlate,
+      String? vehicleModel,
+      String? ownerId,
+      String? fleetId,
+      String? status,
+      int? addedOn,
+      int? updatedOn,
+      // String? vehicleImage,
+      int? totalTrips,
+      int? weeklyTrips,
+      int? startTime,
+      int? lastOnline,
+      int? targetTrips,
+      VehicleOnDuty? onDuty,
+      String? lastDriver,
+      String? lastDriverId,
+      dynamic vehicleRent}) {
+    return VehicleModel(
+      vehicleId: vehicleId ?? this.vehicleId,
+      numberPlate: numberPlate ?? this.numberPlate,
+      vehicleModel: vehicleModel ?? this.vehicleModel,
+      ownerId: ownerId ?? this.ownerId,
+      fleetId: fleetId ?? this.fleetId,
+      status: status ?? this.status,
+      addedOn: addedOn ?? this.addedOn,
+      updatedOn: updatedOn ?? this.updatedOn,
+      // vehicleImage: vehicleImage ?? this.vehicleImage,
+      totalTrips: totalTrips ?? this.totalTrips,
+      weeklyTrips: weeklyTrips ?? this.weeklyTrips,
+      lastOnline: lastOnline ?? this.lastOnline,
+      targetTrips: targetTrips ?? this.targetTrips,
+      onDuty: onDuty ?? this.onDuty,
+      lastDriver: lastDriver ?? this.lastDriver,
+      lastDriverId: lastDriverId ?? this.lastDriverId,
+      vehicleRent: vehicleRent ?? this.vehicleRent,
+    );
+  }
 
-  factory VehicleModel.fromJson(Map<String, dynamic> json) => VehicleModel(
-        vehicleNumber: json["vehicle_number"] ?? '',
-        driver: json["driver"] ?? '',
-        startTime: json["start_time"],
-        lastDriven: json["last_driven"],
-        addedOn: json["added_on"],
-        droppedOn: json["dropped_on"],
-        status: json["status"] ?? '',
-        vehicleId: json["vehicle_id"] ?? '',
-        isDeleted: json["is_deleted"] ?? false,
-        onDuty: json["on_duty"] ?? false,
-        totalTrips: json["total_trips"] ?? false,
-        weeklyTrips: json["weekly_trips"] ?? false,
-        targetTrips: json["target_trips"] ?? false,
-        rent: json["rent"] ?? 0,
-        selectedShift: json["selected_shift"] ?? 0,
-        rentalPlan: json["rental_plan"] ?? 0,
-      );
+  Map<String, dynamic> toMap() {
+    return {
+      'vehicle_id': vehicleId,
+      'number_plate': numberPlate,
+      'vehicle_model': vehicleModel,
+      'owner_id': ownerId,
+      'fleet_id': fleetId,
+      'status': status,
+      'added_on': addedOn,
+      'updated_on': updatedOn,
+      // 'vehicle_image': vehicleImage,
+      'total_trips': totalTrips,
+      'weekly_trips': weeklyTrips,
+      'last_online': lastOnline,
+      'target_trips': targetTrips,
+      'on_duty': onDuty,
+      'last_driver': lastDriver,
+      'last_driver_id': lastDriverId,
+      'vehicle_rent': vehicleRent,
+    };
+  }
 
-  Map<String, dynamic> toJson() => {
-        "vehicle_number": vehicleNumber,
-        "driver": driver,
-        "start_time": startTime,
-        "last_driven": lastDriven,
-        "added_on": addedOn,
-        "dropped_on": droppedOn,
-        "status": status,
-        "vehicle_id": vehicleId,
-        "is_deleted": isDeleted,
-        "on_duty": onDuty,
-        "total_trips": totalTrips,
-        "weekly_trips": weeklyTrips,
-        "target_trips": targetTrips,
-        "rent": rent,
-        "selected_shift": selectedShift,
-        "rental_plan": rentalPlan,
-      };
+  factory VehicleModel.fromMap(Map<String, dynamic> map) {
+    return VehicleModel(
+      vehicleId: map['vehicle_id'] ?? '',
+      numberPlate: map['number_plate'] ?? '',
+      vehicleModel: map['vehicle_model'] ?? '',
+      ownerId: map['owner_id'] ?? '',
+      fleetId: map['fleet_id'],
+      status: map['status'] ?? '',
+      addedOn: map['added_on'] ?? '',
+      updatedOn: map['updated_on'] ?? '',
+      // vehicleImage: map['vehicle_image'] ?? '',
+      totalTrips: map['total_trips'] ?? 0,
+      weeklyTrips: map['weekly_trips'] ?? 0,
+      lastOnline: map['last_online'] ?? DateTime.now().millisecondsSinceEpoch,
+      targetTrips: map['target_trips'] ?? 0,
+      onDuty:
+          map['on_duty'] == null ? null : VehicleOnDuty.fromMap(map['on_duty']),
+      lastDriver: map['last_driver'] ?? '-N/A-',
+      lastDriverId: map['last_driver_id'] ?? '',
+      vehicleRent: map['vehicle_rent'] is List
+          ? map['vehicle_rent'].map((e) => RentRule.fromMap(e)).toList()
+          : map['vehicle_rent'],
+    );
+  }
+}
+
+class RentRule {
+  final int minTrips;
+  final double rent;
+
+  RentRule({
+    required this.minTrips,
+    required this.rent,
+  });
+
+  factory RentRule.fromMap(Map<String, dynamic> data) {
+    return RentRule(
+      minTrips: data['min_trips'] ?? 0,
+      rent: (data['rent'] as num).toDouble(),
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'min_trips': minTrips,
+      'rent': rent,
+    };
+  }
+}
+
+class VehicleOnDuty {
+  final int startTime;
+  final int? endTime;
+  final String driverId;
+  final String driverName;
+  VehicleOnDuty(
+      {required this.startTime,
+      this.endTime,
+      required this.driverId,
+      required this.driverName});
+  Map<String, dynamic> toMap() {
+    return {
+      'start_time': startTime,
+      'end_time': endTime,
+      'vehicle_id': driverId,
+      'vehicle_number': driverName,
+    };
+  }
+
+  factory VehicleOnDuty.fromMap(Map<String, dynamic> map) {
+    return VehicleOnDuty(
+        startTime: map['start_time'] ?? DateTime.now().millisecondsSinceEpoch,
+        endTime: map['end_time'] ?? DateTime.now().millisecondsSinceEpoch,
+        driverId: map['vehicle_id'] ?? '',
+        driverName: map['vehicle_number'] ?? '');
+  }
 }

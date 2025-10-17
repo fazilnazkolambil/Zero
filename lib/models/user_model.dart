@@ -1,106 +1,177 @@
+import 'package:zero/models/earnings_model.dart';
+import 'package:zero/models/fleet_model.dart';
+
 class UserModel {
-  String mobileNumber;
-  String organisationId;
-  String organisationName;
-  String userCreatedOn;
-  String userId;
-  String userRole;
-  String userName;
-  bool isDeleted;
-  // int? totalTrips;
-  // double? totalEarnings;
-  // double? wallet;
-  String status;
-  String isBlocked;
-  // int? targetTrips;
-  // int? totalShifts;
+  final String uid;
+  final String fullName;
+  final String phoneNumber;
+  final String? email;
+  final String licenceUrl;
+  final String aadhaarUrl;
+  final String profilePicUrl;
+  final int createdAt;
+  final int updatedAt;
+  final EarningsModel? earningDetails;
+  String? userRole;
+  final String status;
+  final double wallet;
+  final FleetModel? fleet;
+  final int? weeklyTrip;
+  final int? weeklyShift;
+  final Map<String, dynamic>? blocked;
+  DriverOnDuty? onDuty;
+  final String lastVehicle;
+  UserModel(
+      {required this.uid,
+      required this.fullName,
+      required this.phoneNumber,
+      this.email,
+      required this.licenceUrl,
+      required this.profilePicUrl,
+      required this.aadhaarUrl,
+      required this.createdAt,
+      required this.updatedAt,
+      this.earningDetails,
+      this.userRole,
+      required this.status,
+      required this.wallet,
+      this.fleet,
+      this.weeklyTrip,
+      this.weeklyShift,
+      this.blocked,
+      this.onDuty,
+      required this.lastVehicle});
 
-  UserModel({
-    required this.mobileNumber,
-    required this.organisationId,
-    required this.organisationName,
-    required this.userCreatedOn,
-    required this.userId,
-    required this.userRole,
-    required this.userName,
-    required this.isDeleted,
-    // this.totalTrips,
-    // this.totalEarnings,
-    // this.wallet,
-    required this.status,
-    required this.isBlocked,
-    // this.targetTrips,
-    // this.totalShifts,
-  });
+  /// CopyWith for immutability
+  UserModel copyWith(
+      {String? uid,
+      String? fullName,
+      String? phoneNumber,
+      String? email,
+      String? licenceUrl,
+      String? aadhaarUrl,
+      String? profilePicUrl,
+      int? createdAt,
+      int? updatedAt,
+      EarningsModel? earningDetails,
+      String? userRole,
+      String? status,
+      double? wallet,
+      FleetModel? fleet,
+      int? weeklyTrip,
+      int? weeklyShift,
+      int? targetTrips,
+      Map<String, dynamic>? blocked,
+      DriverOnDuty? onDuty,
+      String? lastVehicle}) {
+    return UserModel(
+      uid: uid ?? this.uid,
+      fullName: fullName ?? this.fullName,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      email: email ?? this.email,
+      licenceUrl: licenceUrl ?? this.licenceUrl,
+      aadhaarUrl: aadhaarUrl ?? this.aadhaarUrl,
+      profilePicUrl: profilePicUrl ?? this.profilePicUrl,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      earningDetails: earningDetails ?? this.earningDetails,
+      userRole: userRole ?? this.userRole,
+      status: status ?? this.status,
+      wallet: wallet ?? this.wallet,
+      fleet: fleet ?? this.fleet,
+      weeklyTrip: weeklyTrip ?? this.weeklyTrip,
+      weeklyShift: weeklyShift ?? this.weeklyShift,
+      blocked: blocked ?? this.blocked,
+      onDuty: onDuty ?? this.onDuty,
+      lastVehicle: lastVehicle ?? this.lastVehicle,
+    );
+  }
 
-  UserModel copyWith({
-    String? mobileNumber,
-    String? organisationId,
-    String? organisationName,
-    String? userCreatedOn,
-    String? userId,
-    String? userRole,
-    String? userName,
-    bool? isDeleted,
-    // int? totalTrips,
-    // double? totalEarnings,
-    // double? wallet,
-    String? status,
-    String? isBlocked,
-    // int? targetTrips,
-    // int? totalShifts,
-  }) =>
-      UserModel(
-        mobileNumber: mobileNumber ?? this.mobileNumber,
-        organisationId: organisationId ?? this.organisationId,
-        organisationName: organisationName ?? this.organisationName,
-        userCreatedOn: userCreatedOn ?? this.userCreatedOn,
-        userId: userId ?? this.userId,
-        userRole: userRole ?? this.userRole,
-        userName: userName ?? this.userName,
-        isDeleted: isDeleted ?? this.isDeleted,
-        // totalTrips: totalTrips ?? this.totalTrips,
-        // totalEarnings: totalEarnings ?? this.totalEarnings,
-        // wallet: wallet ?? this.wallet,
-        status: status ?? this.status,
-        isBlocked: isBlocked ?? this.isBlocked,
-        // targetTrips: targetTrips ?? this.targetTrips,
-        // totalShifts: totalShifts ?? this.totalShifts,
-      );
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'full_name': fullName,
+      'phone_number': phoneNumber,
+      'email': email,
+      'license_url': licenceUrl,
+      'aadhaar_url': aadhaarUrl,
+      'profile_pic_url': profilePicUrl,
+      'created_at': createdAt,
+      'updated_at': updatedAt,
+      'earning_details': earningDetails,
+      'user_role': userRole,
+      'status': status,
+      'wallet': wallet,
+      'fleet': fleet,
+      'weekly_trip': weeklyTrip,
+      'weekly_shift': weeklyShift,
+      'blocked': blocked,
+      'on_duty': onDuty,
+      'last_vehicle': lastVehicle,
+    };
+  }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        mobileNumber: json["mobile_number"] ?? '',
-        organisationId: json["organisation_id"] ?? '',
-        organisationName: json["organisation_name"] ?? '',
-        userCreatedOn: json["user_created_on"] ?? DateTime.now().toString(),
-        userId: json["user_id"] ?? '',
-        userRole: json["user_role"] ?? '',
-        userName: json["user_name"] ?? '',
-        isDeleted: json["is_deleted"] ?? false,
-        // totalTrips: json["total_trips"] ?? 0,
-        // totalEarnings: json["total_earnings"]?.toDouble() ?? 0.0,
-        // wallet: json["wallet"]?.toDouble() ?? 0.0,
-        status: json["status"] ?? '',
-        isBlocked: json["is_blocked"] ?? '',
-        // targetTrips: json["target_trips"] ?? 0,
-        // totalShifts: json["total_shifts"] ?? 0,
-      );
+  factory UserModel.fromMap(Map<String, dynamic> map) {
+    return UserModel(
+        uid: map['uid'] ?? '',
+        fullName: map['full_name'] ?? '',
+        phoneNumber: map['phone_number'] ?? '',
+        email: map['email'] ?? '',
+        licenceUrl: map['license_url'] ?? '',
+        aadhaarUrl: map['aadhaar_url'] ?? '',
+        profilePicUrl: map['profile_pic_url'] ?? '',
+        createdAt: map['created_at'] ?? DateTime.now().millisecondsSinceEpoch,
+        updatedAt: map['updated_at'] ?? DateTime.now().millisecondsSinceEpoch,
+        userRole: map['user_role'],
+        status: map['status'] ?? 'ACTIVE',
+        wallet: map['wallet'] ?? 0,
+        fleet: map['fleet'] == null ? null : FleetModel.fromMap(map['fleet']),
+        weeklyTrip: map['weekly_trip'] ?? 0,
+        weeklyShift: map['weekly_shift'] ?? 0,
+        blocked: map['blocked'],
+        lastVehicle: map['last_vehicle'] ?? '',
+        onDuty: map['on_duty'] == null
+            ? null
+            : DriverOnDuty.fromMap(map['on_duty']),
+        earningDetails: map['earning_details'] == null
+            ? null
+            : EarningsModel.fromMap(map['earning_details']));
+  }
+}
 
-  Map<String, dynamic> toJson() => {
-        "mobile_number": mobileNumber,
-        "organisation_id": organisationId,
-        "organisation_name": organisationName,
-        "user_created_on": userCreatedOn,
-        "user_id": userId,
-        "user_role": userRole,
-        "user_name": userName,
-        "is_deleted": isDeleted,
-        // "total_trips": totalTrips,
-        // "total_earnings": totalEarnings,
-        // "wallet": wallet,
-        "status": status,
-        "is_blocked": isBlocked,
-        // "target_trips": targetTrips,
-        // "total_shifts": totalShifts,
-      };
+class DriverOnDuty {
+  final String dutyId;
+  final int startTime;
+  final int? endTime;
+  final String vehicleId;
+  final String vehicleNumber;
+  final int selectedShift;
+  DriverOnDuty(
+      {required this.dutyId,
+      required this.startTime,
+      this.endTime,
+      required this.vehicleId,
+      required this.vehicleNumber,
+      required this.selectedShift});
+  Map<String, dynamic> toMap() {
+    return {
+      'duty_id': dutyId,
+      'start_time': startTime,
+      'end_time': endTime,
+      'vehicle_id': vehicleId,
+      'vehicle_number': vehicleNumber,
+      'selected_shift': selectedShift,
+    };
+  }
+
+  factory DriverOnDuty.fromMap(Map<String, dynamic> map) {
+    return DriverOnDuty(
+      dutyId: map['duty_id'] ?? '',
+      startTime: map['start_time'] ?? DateTime.now().millisecondsSinceEpoch,
+      endTime: map['end_time'] ?? DateTime.now().millisecondsSinceEpoch,
+      vehicleId: map['vehicle_id'] ?? '',
+      vehicleNumber: map['vehicle_number'] ?? '',
+      selectedShift: map['selected_shift'] ?? '1',
+    );
+  }
 }
