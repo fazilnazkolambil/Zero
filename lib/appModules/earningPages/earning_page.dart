@@ -28,7 +28,16 @@ class EarningPage extends StatelessWidget {
             const SizedBox(height: 10),
             stateBreakdown(),
             const SizedBox(height: 10),
-            buildRentList()
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                      fixedSize: Size(w, 45),
+                      backgroundColor: Colors.grey,
+                      foregroundColor: Colors.black),
+                  onPressed: () {},
+                  child: const Text('See weekly activities')),
+            )
           ],
         ),
       ),
@@ -350,104 +359,6 @@ class EarningPage extends StatelessWidget {
                       color: toPay > 0 ? Colors.green : Colors.red,
                       fontWeight: FontWeight.w600)),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildRentList() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Weekly activity',
-              style: Get.textTheme.headlineSmall!
-                  .copyWith(fontWeight: FontWeight.bold)),
-          ListView.separated(
-            padding: EdgeInsets.only(top: h * 0.02),
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 10,
-            itemBuilder: (context, index) {
-              // DateTime date = rentModels[index].startTime.toDate();
-              DateTime date = DateTime.now();
-
-              return ExpandablePanel(
-                theme: const ExpandableThemeData(
-                  useInkWell: false,
-                  iconSize: 15,
-                ),
-                header: ListTile(
-                  leading: Container(
-                    width: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          DateFormat('E').format(date),
-                          style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey),
-                        ),
-                        Text(
-                          DateFormat('d').format(date),
-                        ),
-                      ],
-                    ),
-                  ),
-                  title: Text('KA03AM3257'),
-                  subtitle: Text(
-                    // "${DateFormat.jm().format(rentModels[index].startTime.toDate())} - ${DateFormat.jm().format(rentModels[index].endTime!.toDate())}",
-                    '04:00 AM - 04:00 PM',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  // trailing: Text(
-                  //   '₹${(balance).toStringAsFixed(2)}',
-                  //   style: TextStyle(
-                  //       fontWeight: FontWeight.bold,
-                  //       color: balance < 0
-                  //           ? ColorConst.errorColor
-                  //           : ColorConst.successColor),
-                  // ),
-                ),
-                collapsed: const SizedBox(),
-                expanded: Padding(
-                  padding: EdgeInsets.all(w * 0.03),
-                  child: Column(
-                    children: [
-                      CustomWidgets()
-                          .textRow(label: 'Total shift', value: 2.toString()),
-                      CustomWidgets().textRow(
-                          label: 'Total earnings',
-                          value: 3500.toStringAsFixed(2)),
-                      CustomWidgets().textRow(
-                          label: 'Refund', value: 252.toStringAsFixed(2)),
-                      CustomWidgets().textRow(
-                          label: 'Cash collected',
-                          value: 1500.toStringAsFixed(2)),
-                      CustomWidgets().textRow(
-                          label: 'Fuel expense', value: 750.toStringAsFixed(2)),
-                      CustomWidgets().textRow(
-                          label: 'Vehicle rent',
-                          value: (2 * 500).toStringAsFixed(2)),
-                      CustomWidgets().textRow(
-                          label: 'To pay', value: (450).toStringAsFixed(2)),
-                    ],
-                  ),
-                ),
-              );
-            },
-            separatorBuilder: (context, index) => Divider(
-              color: Colors.grey[700],
-            ),
           ),
         ],
       ),

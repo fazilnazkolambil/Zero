@@ -5,7 +5,7 @@ class FleetModel {
   final bool isHiring;
   final String contactNumber;
   final String officeAddress;
-  final String parkingLocation;
+  final Map<String, dynamic> parkingLocation;
   final List? drivers;
   final List? vehicles;
   final int addedOn;
@@ -34,7 +34,7 @@ class FleetModel {
     bool? isHiring,
     String? contactNumber,
     String? officeAddress,
-    String? parkingLocation,
+    Map<String, dynamic>? parkingLocation,
     List<String>? drivers,
     List<String>? vehicles,
     int? addedOn,
@@ -82,7 +82,7 @@ class FleetModel {
       isHiring: map['is_hiring'] ?? false,
       contactNumber: map['contact_number'] ?? '',
       officeAddress: map['office_address'] ?? '',
-      parkingLocation: map['parking_location'] ?? '',
+      parkingLocation: map['parking_location'] ?? {},
       drivers: map['drivers'] ?? [],
       vehicles: map['vehicles'] ?? [],
       addedOn: map['added_on'] ?? 0,

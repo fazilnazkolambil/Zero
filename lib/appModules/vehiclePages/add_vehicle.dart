@@ -17,19 +17,19 @@ class AddVehiclePage extends StatelessWidget {
     if (isEdit) {
       controller.numberPlateController.text = vehicle!.numberPlate;
       controller.vehicleModelController.text = vehicle!.vehicleModel;
-      controller.targetTrips.text = vehicle!.targetTrips.toString();
+      // controller.targetTrips.text = vehicle!.targetTrips.toString();
       print(vehicle!.vehicleRent);
       if (vehicle!.vehicleRent is List) {
         controller.rentType.value = 'perTrip';
         for (int i = 0; i < vehicle!.vehicleRent.length; i++) {
-          RentRule rentList = vehicle!.vehicleRent[i];
+          Map<String, dynamic> rentList = vehicle!.vehicleRent[i];
           controller.rentRules.addIf(
               controller.rentRules.length < vehicle!.vehicleRent.length,
               RuleModel());
           controller.rentRules[i].minController.text =
-              rentList.minTrips.toString();
+              rentList['min_trips'].toString();
           controller.rentRules[i].rentController.text =
-              rentList.rent.toString();
+              rentList['rent'].toString();
         }
       } else {
         controller.fixedRentController.text = vehicle!.vehicleRent.toString();
@@ -107,20 +107,20 @@ class AddVehiclePage extends StatelessWidget {
                   }
                 },
               ),
-              CustomWidgets().textField(
-                textInputType: TextInputType.number,
-                maxLength: 3,
-                hintText: 'Target trips per week',
-                label: 'Target trips',
-                textController: controller.targetTrips,
-                validator: (value) {
-                  if (value!.isEmpty) {
-                    return 'Please enter vehicle\'s target trips';
-                  } else {
-                    return null;
-                  }
-                },
-              ),
+              // CustomWidgets().textField(
+              //   textInputType: TextInputType.number,
+              //   maxLength: 3,
+              //   hintText: 'Target trips per week',
+              //   label: 'Target trips',
+              //   textController: controller.targetTrips,
+              //   validator: (value) {
+              //     if (value!.isEmpty) {
+              //       return 'Please enter vehicle\'s target trips';
+              //     } else {
+              //       return null;
+              //     }
+              //   },
+              // ),
               const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -196,10 +196,12 @@ class AddVehiclePage extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => controller.rentRules.add(RuleModel()),
-              icon: const Icon(Icons.add),
-              label: const Text("Add Rent Rule"),
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: () => controller.rentRules.add(RuleModel()),
+                icon: const Icon(Icons.add),
+                label: const Text("Add Rent Rule"),
+              ),
             ),
           ],
         ));

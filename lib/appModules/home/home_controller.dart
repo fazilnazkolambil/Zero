@@ -30,6 +30,9 @@ class HomeController extends GetxController {
   final box = Hive.box('zeroCache');
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  RxString searchkey = ''.obs;
+  SearchController searchController = SearchController();
+
   RxList<Map<String, dynamic>> get homePages {
     switch (userRole) {
       case ('USER'):
@@ -134,7 +137,7 @@ class HomeController extends GetxController {
       vehicles.clear();
       var data = await _firestore
           .collection('vehicles')
-          .where('fleet_id', isEqualTo: currentUser!.fleetId)
+          .where('fleet_id', isEqualTo: currentUser!.fleet!.fleetId)
           .where('on_duty', isNull: true)
           .get();
       vehicles.value =

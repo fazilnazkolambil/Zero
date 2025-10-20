@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/duty_model.dart';
@@ -25,6 +26,46 @@ class DutyController extends GetxController {
   Map<String, dynamic> finalValues = {};
 
   final formkey = GlobalKey<FormState>();
+  RxBool isLocationLoading = false.obs;
+  Future<bool> isDriverinLocation() async {
+    isLocationLoading.value = true;
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception('Location services are disabled.');
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        throw Exception('Location permission denied.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception('Location permissions are permanently denied.');
+    }
+
+    Position currentPosition = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+
+    final Map<String, dynamic> fleetLocation =
+        currentUser!.fleet!.parkingLocation;
+    double distance = Geolocator.distanceBetween(
+        fleetLocation['latitude'],
+        fleetLocation['longitude'],
+        currentPosition.latitude,
+        currentPosition.longitude);
+    log(distance.toString());
+    if (distance <= 1000) {
+      isLocationLoading.value = false;
+      return true;
+    } else {
+      isLocationLoading.value = false;
+      return false;
+    }
+  }
 
   RxBool isDutyLoading = false.obs;
   Future<void> startDuty() async {
@@ -43,6 +84,7 @@ class DutyController extends GetxController {
           if (!driverSnap.exists || !vehicleSnap.exists) {
             throw Exception('Driver or vehicle not found');
           }
+
           int selectedShifts = dutyHours.value == '12 hrs' ? 1 : 2;
           DutyModel newDuty = DutyModel(
               dutyId: dutyRef.id,
@@ -78,6 +120,29 @@ class DutyController extends GetxController {
     }
   }
 
+  double calculateVehicleRent({
+    required dynamic rentRules,
+    required int totalTrips,
+    required int selectedShift,
+  }) {
+    if (rentRules is double || rentRules is int) {
+      return (rentRules as num).toDouble() * selectedShift;
+    }
+
+    final rules = List<Map<String, dynamic>>.from(rentRules);
+    rules.sort(
+        (a, b) => (b['min_trips'] as int).compareTo(a['min_trips'] as int));
+
+    for (var rule in rules) {
+      int scaledMinTrips = (rule['min_trips'] as int) * selectedShift;
+      if (totalTrips >= scaledMinTrips) {
+        return (rule['rent'] as num).toDouble() * selectedShift;
+      }
+    }
+
+    return 0;
+  }
+
   Future<void> endDuty({required DriverOnDuty duty}) async {
     try {
       isDutyLoading.value = true;
@@ -104,31 +169,35 @@ class DutyController extends GetxController {
 
         VehicleModel vehicleData = VehicleModel.fromMap(vehicleSnap.data()!);
         dynamic rentRules = vehicleData.vehicleRent;
-        final rentType = rentRules is List ? 'per_trip' : 'fixed';
-        double vehicleRent = 0;
-        if (rentType == 'fixed') {
-          vehicleRent = rentRules;
-        } else if (rentType == 'per_trip') {
-          final rules = List<Map<String, dynamic>>.from(rentRules);
-          rules.sort((a, b) =>
-              (b['min_trips'] as int).compareTo(a['min_trips'] as int));
-          for (var rule in rules) {
-            if (totalTrips >= rule['min_trips']) {
-              vehicleRent = rule['rent']?.toDouble() ?? 0;
-              break;
-            }
-          }
-        }
-
         int selectedShift = duty.selectedShift;
+        double vehicleRent = calculateVehicleRent(
+            rentRules: rentRules,
+            totalTrips: totalTrips,
+            selectedShift: selectedShift);
+        // final rentType = rentRules is List ? 'per_trip' : 'fixed';
+        // double vehicleRent = 0;
+        // if (rentType == 'fixed') {
+        //   vehicleRent = rentRules;
+        // } else if (rentType == 'per_trip') {
+        //   final rules = List<Map<String, dynamic>>.from(rentRules);
+        //   rules.sort((a, b) =>
+        //       (b['min_trips'] as int).compareTo(a['min_trips'] as int));
+        //   for (var rule in rules) {
+        //     if (totalTrips >= rule['min_trips']) {
+        //       vehicleRent = rule['rent'];
+        //       break;
+        //     }
+        //   }
+        // }
+
         double otherFees = totalEarnings * 0.14;
 
         double totalToPay =
             ((totalEarnings - otherFees) + refund - cashCollected) -
-                (selectedShift * vehicleRent);
+                vehicleRent;
 
         finalValues = {
-          'vehicle_rent': vehicleRent * selectedShift,
+          'vehicle_rent': vehicleRent,
           'other_fees': otherFees,
           'total_to_pay': totalToPay,
         };
@@ -143,6 +212,7 @@ class DutyController extends GetxController {
           'fuel_expense': fuelExpense,
           'otherFees': otherFees,
           'total_to_pay': totalToPay,
+          'vehicle_rent': vehicleRent,
         };
         transaction.update(dutyRef, dutyUpdates);
         transaction.update(driverRef, {

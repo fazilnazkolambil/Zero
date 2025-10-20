@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:developer';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -8,7 +6,6 @@ import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/fleet_model.dart';
-import 'package:zero/models/vehicle_model.dart';
 import 'package:geolocator/geolocator.dart';
 
 class OnboardingController extends GetxController {
@@ -23,6 +20,10 @@ class OnboardingController extends GetxController {
   TextEditingController contactNumberController = TextEditingController();
   TextEditingController officeAddressController = TextEditingController();
   TextEditingController latLongController = TextEditingController();
+  TextEditingController driverTargetTrips = TextEditingController();
+  TextEditingController vehicleTargetTrips = TextEditingController();
+
+  Map<String, dynamic> fleetLatLong = {};
   RxBool isFleetHiring = false.obs;
 
   final formkey = GlobalKey<FormState>();
@@ -83,6 +84,10 @@ class OnboardingController extends GetxController {
           locationSettings:
               const LocationSettings(accuracy: LocationAccuracy.high));
       latLongController.text = "${position.latitude}, ${position.longitude}";
+      fleetLatLong = {
+        'latitude': position.latitude,
+        'longitude': position.longitude
+      };
     } catch (e) {
       Fluttertoast.showToast(
           msg: 'Error fetching location', backgroundColor: Colors.red);
@@ -94,35 +99,39 @@ class OnboardingController extends GetxController {
   createfleet() async {
     try {
       isLoading.value = true;
-      String fleetId = '';
-      currentFleet = FleetModel(
-          fleetId: '',
-          ownerId: currentUser!.uid,
-          fleetName: fleetNameController.text.trim(),
-          isHiring: isFleetHiring.value,
-          contactNumber: '+91${contactNumberController.text.trim()}',
-          officeAddress: officeAddressController.text.trim(),
-          parkingLocation: latLongController.text.trim(),
-          addedOn: DateTime.now().millisecondsSinceEpoch,
-          updatedOn: DateTime.now().millisecondsSinceEpoch,
-          targets: {'driver': 0, 'vehicle': 0}); //TODO:
-      await _firestore.collection('fleets').add(currentFleet!.toMap()).then(
-        (value) {
-          value.update({'fleet_id': value.id});
-          fleetId = value.id;
+
+      FleetModel currentFleet = FleetModel(
+        fleetId: '',
+        ownerId: currentUser!.uid,
+        fleetName: fleetNameController.text.trim(),
+        isHiring: isFleetHiring.value,
+        contactNumber: '+91${contactNumberController.text.trim()}',
+        officeAddress: officeAddressController.text.trim(),
+        parkingLocation: fleetLatLong,
+        addedOn: DateTime.now().millisecondsSinceEpoch,
+        updatedOn: DateTime.now().millisecondsSinceEpoch,
+        targets: {
+          'driver': int.tryParse(driverTargetTrips.text) ?? 0,
+          'vehicle': int.tryParse(vehicleTargetTrips.text) ?? 0,
         },
       );
-      box.put('currentFleet', jsonEncode(currentFleet!.toMap()));
-      await _firestore
-          .collection('users')
-          .doc(currentUser!.uid)
-          .update({'user_role': 'FLEET_OWNER', 'fleet_id': fleetId});
+      final docRef =
+          await _firestore.collection('fleets').add(currentFleet.toMap());
+      await docRef.update({'fleet_id': docRef.id});
+      currentFleet = currentFleet.copyWith(fleetId: docRef.id);
+
+      await _firestore.collection('users').doc(currentUser!.uid).update({
+        'user_role': 'FLEET_OWNER',
+        'fleet': currentFleet.toMap(),
+      });
+
       currentUser =
-          currentUser!.copyWith(userRole: 'FLEET_OWNER', fleetId: fleetId);
+          currentUser!.copyWith(userRole: 'FLEET_OWNER', fleet: currentFleet);
+
       Get.offAllNamed('/home');
-      isLoading.value = false;
     } catch (e) {
-      log('Error creating fleet : $e');
+      log('Error creating fleet: $e');
+    } finally {
       isLoading.value = false;
     }
   }

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:zero/appModules/driverPages/add_driver.dart';
 import 'package:zero/appModules/driverPages/driver_controller.dart';
@@ -26,11 +27,11 @@ class DriversPage extends StatelessWidget {
             },
             child: const Icon(Icons.person_add_alt_1),
           ),
-          appBar: AppBar(
-            flexibleSpace: FlexibleSpaceBar(
-              background: driverStats(),
-            ),
-          ),
+          // appBar: AppBar(
+          //   flexibleSpace: FlexibleSpaceBar(
+          //     background: driverStats(),
+          //   ),
+          // ),
           body: RefreshIndicator(
             color: ColorConst.primaryColor,
             onRefresh: () => controller.listDrivers(),
@@ -138,7 +139,7 @@ class DriversPage extends StatelessWidget {
           itemBuilder: (context, index) {
             final driver = controller.driverList[index];
             int targetTrips =
-                currentFleet!.targets['driver']! * driver.weeklyShift!;
+                currentUser!.fleet!.targets['driver']! * driver.weeklyShift!;
             final tripCompletion =
                 driver.weeklyTrip! / (targetTrips > 0 ? targetTrips : 1);
             return Card(
@@ -146,325 +147,106 @@ class DriversPage extends StatelessWidget {
                     theme: const ExpandableThemeData(
                         useInkWell: false, hasIcon: false),
                     header: ListTile(
-                      contentPadding: EdgeInsets.all(w * 0.03),
-                      minLeadingWidth: w * 0.15,
-                      leading: driver.blocked == null
-                          ? Padding(
-                              padding:
-                                  EdgeInsets.symmetric(horizontal: w * 0.03),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.circle,
-                                      size: w * 0.04,
-                                      color: driver.onDuty == null
-                                          ? Colors.red
-                                          : Colors.green),
-                                  SizedBox(
-                                    height: h * 0.01,
-                                  ),
-                                  Text(
-                                      driver.onDuty != null ? 'Online' : 'Rest')
-                                ],
-                              ),
-                            )
-                          : const Icon(
-                              Icons.block,
-                            ),
-                      title: Text(driver.fullName),
-                      subtitle: driver.blocked == null
-                          ? Padding(
-                              padding: EdgeInsets.only(top: h * 0.01),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: LinearProgressIndicator(
-                                      value: tripCompletion > 1
-                                          ? 1
-                                          : tripCompletion,
-                                      minHeight: 5,
-                                      backgroundColor: Colors.grey.shade200,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        tripCompletion >= 1
+                        // minLeadingWidth: w * 0.15,
+                        leading: driver.blocked == null
+                            ? Padding(
+                                padding:
+                                    EdgeInsets.symmetric(horizontal: w * 0.03),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.circle,
+                                        size: w * 0.04,
+                                        color: driver.onDuty == null
                                             ? Colors.green
-                                            : Colors.green,
-                                      ),
+                                            : Colors.red),
+                                    SizedBox(
+                                      height: h * 0.01,
                                     ),
-                                  ),
-                                  SizedBox(height: h * 0.01),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      '${driver.weeklyTrip.toString()} / ${targetTrips.toString()} trips',
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                    Text(driver.onDuty != null
+                                        ? 'On duty'
+                                        : 'On rest')
+                                  ],
+                                ),
+                              )
+                            : const Icon(
+                                Icons.block,
                               ),
-                            )
-                          : const Text('Driver have been blocked'),
-                      // trailing:
-                      //  PopupMenuButton(
-                      //   color: ColorConst.boxColor,
-                      //   child: const Icon(
-                      //     Icons.more_vert_rounded,
-                      //     color: ColorConst.textColor,
-                      //   ),
-                      //   itemBuilder: (context) {
-                      //     return [
-                      //       if (drivers[index].isBlocked.isEmpty)
-                      //         PopupMenuItem(
-                      //             onTap: () =>
-                      //                 _showDriverForm(driver: drivers[index]),
-                      //             child: const Text(
-                      //               'Edit',
-                      //               style: TextStyle(
-                      //                   fontWeight: FontWeight.w600,
-                      //                   color: ColorConst.textColor),
-                      //             )),
-                      //       PopupMenuItem(
-                      //           onTap: () async {
-                      //             TextEditingController reasonController =
-                      //                 TextEditingController(
-                      //                     text: drivers[index].isBlocked);
-                      //             showDialog(
-                      //                 context: context,
-                      //                 builder: (context) => AlertDialog(
-                      //                       backgroundColor:
-                      //                           ColorConst.boxColor,
-                      //                       title: Text(
-                      //                           drivers[index].isBlocked.isEmpty
-                      //                               ? 'Block driver?'
-                      //                               : 'Ublock driver?',
-                      //                           style: const TextStyle(
-                      //                               color:
-                      //                                   ColorConst.textColor)),
-                      //                       content: drivers[index]
-                      //                               .isBlocked
-                      //                               .isEmpty
-                      //                           ? TextField(
-                      //                               controller:
-                      //                                   reasonController,
-                      //                               style: const TextStyle(
-                      //                                   color: ColorConst
-                      //                                       .textColor),
-                      //                               decoration:
-                      //                                   const InputDecoration(
-                      //                                       border:
-                      //                                           OutlineInputBorder(),
-                      //                                       focusedBorder:
-                      //                                           OutlineInputBorder(
-                      //                                         borderSide: BorderSide(
-                      //                                             color: ColorConst
-                      //                                                 .primaryColor),
-                      //                                       ),
-                      //                                       filled: true,
-                      //                                       fillColor:
-                      //                                           ColorConst
-                      //                                               .boxColor,
-                      //                                       labelStyle: TextStyle(
-                      //                                           color: ColorConst
-                      //                                               .textColor),
-                      //                                       labelText:
-                      //                                           'Reason'),
-                      //                             )
-                      //                           : Text(
-                      //                               'Reason : ${drivers[index].isBlocked}',
-                      //                               style: const TextStyle(
-                      //                                   color: ColorConst
-                      //                                       .textColor,
-                      //                                   fontWeight:
-                      //                                       FontWeight.bold),
-                      //                             ),
-                      //                       actions: [
-                      //                         TextButton(
-                      //                             style: const ButtonStyle(
-                      //                               side: WidgetStatePropertyAll(
-                      //                                   BorderSide(
-                      //                                       color: ColorConst
-                      //                                           .primaryColor)),
-                      //                               foregroundColor:
-                      //                                   WidgetStatePropertyAll(
-                      //                                       ColorConst
-                      //                                           .primaryColor),
-                      //                             ),
-                      //                             onPressed: () =>
-                      //                                 Navigator.pop(context),
-                      //                             child: const Text('No')),
-                      //                         TextButton(
-                      //                             style: const ButtonStyle(
-                      //                               foregroundColor:
-                      //                                   WidgetStatePropertyAll(
-                      //                                       ColorConst
-                      //                                           .backgroundColor),
-                      //                               backgroundColor:
-                      //                                   WidgetStatePropertyAll(
-                      //                                       ColorConst
-                      //                                           .primaryColor),
-                      //                             ),
-                      //                             onPressed: () async {
-                      //                               if (reasonController
-                      //                                   .text.isNotEmpty) {
-                      //                                 await FirebaseFirestore
-                      //                                     .instance
-                      //                                     .collection('users')
-                      //                                     .doc(drivers[index]
-                      //                                         .driverId)
-                      //                                     .update({
-                      //                                   'organisation_id': '',
-                      //                                   'organisation_name': '',
-                      //                                   'status': drivers[index]
-                      //                                           .isBlocked
-                      //                                           .isEmpty
-                      //                                       ? 'BLOCKED'
-                      //                                       : 'ACTIVE',
-                      //                                   'is_blocked': drivers[
-                      //                                               index]
-                      //                                           .isBlocked
-                      //                                           .isEmpty
-                      //                                       ? reasonController
-                      //                                           .text
-                      //                                       : ''
-                      //                                 });
-                      //                                 await FirebaseFirestore
-                      //                                     .instance
-                      //                                     .collection(
-                      //                                         'organisations')
-                      //                                     .doc(currentUser!
-                      //                                         .organisationId)
-                      //                                     .collection('drivers')
-                      //                                     .doc(drivers[index]
-                      //                                         .driverId)
-                      //                                     .update({
-                      //                                   'is_blocked': drivers[
-                      //                                               index]
-                      //                                           .isBlocked
-                      //                                           .isEmpty
-                      //                                       ? reasonController
-                      //                                           .text
-                      //                                       : ''
-                      //                                 });
-                      //                                 Fluttertoast.showToast(
-                      //                                     msg: drivers[index]
-                      //                                             .isBlocked
-                      //                                             .isEmpty
-                      //                                         ? 'Driver blocked!'
-                      //                                         : 'Driver unblocked');
-                      //                                 Navigator.pop(context);
-                      //                                 getDrivers();
-                      //                               } else {
-                      //                                 Fluttertoast.showToast(
-                      //                                     msg:
-                      //                                         'Enter the reason!',
-                      //                                     toastLength: Toast
-                      //                                         .LENGTH_SHORT);
-                      //                               }
-                      //                             },
-                      //                             child: const Text('Yes')),
-                      //                       ],
-                      //                     ));
-                      //           },
-                      //           child: Text(
-                      //               drivers[index].isBlocked.isEmpty
-                      //                   ? 'Block'
-                      //                   : 'Unblock',
-                      //               style: TextStyle(
-                      //                   fontWeight: FontWeight.w600,
-                      //                   color: drivers[index].isBlocked.isEmpty
-                      //                       ? ColorConst.textColor
-                      //                       : ColorConst.errorColor))),
-                      //       if (drivers[index].isBlocked.isEmpty)
-                      //         PopupMenuItem(
-                      //             onTap: () async {
-                      //               showDialog(
-                      //                   context: context,
-                      //                   builder: (context) => AlertDialog(
-                      //                         backgroundColor:
-                      //                             ColorConst.boxColor,
-                      //                         title: const Text(
-                      //                             'Remove driver?',
-                      //                             style: TextStyle(
-                      //                                 color: ColorConst
-                      //                                     .textColor)),
-                      //                         content: const Text(
-                      //                           'Are you sure you want to remove this driver?',
-                      //                           style: TextStyle(
-                      //                               color:
-                      //                                   ColorConst.textColor),
-                      //                         ),
-                      //                         actions: [
-                      //                           TextButton(
-                      //                               style: const ButtonStyle(
-                      //                                 foregroundColor:
-                      //                                     WidgetStatePropertyAll(
-                      //                                         ColorConst
-                      //                                             .primaryColor),
-                      //                               ),
-                      //                               onPressed: () =>
-                      //                                   Navigator.pop(context),
-                      //                               child: const Text('No')),
-                      //                           TextButton(
-                      //                               style: const ButtonStyle(
-                      //                                 foregroundColor:
-                      //                                     WidgetStatePropertyAll(
-                      //                                         ColorConst
-                      //                                             .backgroundColor),
-                      //                                 backgroundColor:
-                      //                                     WidgetStatePropertyAll(
-                      //                                         ColorConst
-                      //                                             .primaryColor),
-                      //                               ),
-                      //                               onPressed: () async {
-                      //                                 await FirebaseFirestore
-                      //                                     .instance
-                      //                                     .collection('users')
-                      //                                     .doc(drivers[index]
-                      //                                         .driverId)
-                      //                                     .update({
-                      //                                   'organisation_id': '',
-                      //                                   'organisation_name': '',
-                      //                                   'status': 'LEFT_COMPANY'
-                      //                                 });
-                      //                                 await FirebaseFirestore
-                      //                                     .instance
-                      //                                     .collection(
-                      //                                         'organisations')
-                      //                                     .doc(currentUser!
-                      //                                         .organisationId)
-                      //                                     .collection('drivers')
-                      //                                     .doc(drivers[index]
-                      //                                         .driverId)
-                      //                                     .update({
-                      //                                   'is_deleted': true
-                      //                                 });
-                      //                                 Fluttertoast.showToast(
-                      //                                     msg:
-                      //                                         'Driver have been removed!',
-                      //                                     toastLength: Toast
-                      //                                         .LENGTH_SHORT,
-                      //                                     gravity: ToastGravity
-                      //                                         .TOP_LEFT);
-                      //                                 Navigator.pop(context);
-                      //                                 getDrivers();
-                      //                               },
-                      //                               child: const Text('Yes')),
-                      //                         ],
-                      //                       ));
-                      //             },
-                      //             child: const Text('Remove',
-                      //                 style: TextStyle(
-                      //                     fontWeight: FontWeight.w600,
-                      //                     color: ColorConst.textColor))
-                      //                     ),
-                      //     ];
-                      //   },
-                      // )
-                    ),
+                        title: Text(driver.fullName),
+                        subtitle: Padding(
+                          padding: EdgeInsets.only(top: h * 0.01),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: LinearProgressIndicator(
+                                  value:
+                                      tripCompletion > 1 ? 1 : tripCompletion,
+                                  minHeight: 5,
+                                  backgroundColor: Colors.grey.shade200,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    tripCompletion >= 1
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: h * 0.01),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Text(
+                                  '${driver.weeklyTrip.toString()} / ${targetTrips.toString()} trips',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        trailing: PopupMenuButton(
+                          child: const Icon(
+                            Icons.more_vert_rounded,
+                          ),
+                          itemBuilder: (context) {
+                            return [
+                              PopupMenuItem(
+                                  onTap: () async {
+                                    if (driver.onDuty != null) {
+                                      Fluttertoast.showToast(
+                                          msg:
+                                              'Driver is on duty. Please try again after the driver finishing duty',
+                                          backgroundColor: Colors.red);
+                                    } else {
+                                      Get.dialog(
+                                          barrierDismissible: false,
+                                          AlertDialog(
+                                            title: const Text('Remove driver?'),
+                                            content: const Text(
+                                                'Are you sure you want to remove this driver from your fleet?'),
+                                            actions: [
+                                              TextButton(
+                                                  onPressed: () => Get.back(),
+                                                  child:
+                                                      const Text('No, cancel')),
+                                              TextButton(
+                                                  onPressed: () {
+                                                    controller.removeDriver(
+                                                        userId: driver.uid);
+                                                    Get.back();
+                                                  },
+                                                  child: const Text(
+                                                      'Yes, confirm')),
+                                            ],
+                                          ));
+                                    }
+                                  },
+                                  child: const Text('Remove')),
+                            ];
+                          },
+                        )),
                     collapsed: const SizedBox(),
                     expanded: Padding(
                       padding: EdgeInsets.all(w * 0.03),

@@ -19,7 +19,7 @@ class VehicleController extends GetxController {
   final formkey = GlobalKey<FormState>();
   final numberPlateController = TextEditingController();
   final vehicleModelController = TextEditingController();
-  final targetTrips = TextEditingController();
+  // final targetTrips = TextEditingController();
   final rentType = 'fixed'.obs;
   final fixedRentController = TextEditingController();
   final rentRules = <RuleModel>[].obs;
@@ -87,14 +87,13 @@ class VehicleController extends GetxController {
           status: 'ACTIVE',
           addedOn: DateTime.now().millisecondsSinceEpoch,
           updatedOn: DateTime.now().millisecondsSinceEpoch,
-          targetTrips: int.parse(targetTrips.text),
-          fleetId: currentUser!.fleetId,
+          fleetId: currentUser!.fleet!.fleetId,
           vehicleRent: rentType.value == 'fixed'
               ? double.parse(fixedRentController.text)
-              : rentRules.map((r) => RentRule(
-                      minTrips: int.tryParse(r.minController.text) ?? 0,
-                      rent: double.tryParse(r.rentController.text) ?? 0)
-                  .toMap()),
+              : rentRules.map((r) => {
+                    'min_trips': int.tryParse(r.minController.text) ?? 0,
+                    'rent': double.tryParse(r.rentController.text) ?? 0
+                  }),
         );
         await _firestore
             .collection('vehicles')
@@ -105,7 +104,7 @@ class VehicleController extends GetxController {
         });
         await _firestore
             .collection('fleets')
-            .doc(currentFleet!.fleetId)
+            .doc(currentUser!.fleet!.fleetId)
             .update({
           'vehicles': FieldValue.arrayUnion([vehicleId])
         });
@@ -129,17 +128,14 @@ class VehicleController extends GetxController {
       isLoading.value = true;
       dynamic vehicleRent = rentType.value == 'fixed'
           ? double.parse(fixedRentController.text)
-          : rentRules
-              .map((r) => RentRule(
-                      minTrips: int.tryParse(r.minController.text) ?? 0,
-                      rent: double.tryParse(r.rentController.text) ?? 0)
-                  .toMap())
-              .toList();
+          : rentRules.map((r) => {
+                'min_trips': int.tryParse(r.minController.text) ?? 0,
+                'rent': double.tryParse(r.rentController.text) ?? 0
+              });
       await _firestore.collection('vehicles').doc(vehicleId).update({
         'number_plate': numberPlateController.text.trim(),
         'vehicle_model': vehicleModelController.text.trim(),
         'updated_on': DateTime.now().millisecondsSinceEpoch,
-        'target_trips': int.parse(targetTrips.text),
         'vehicle_rent': vehicleRent,
       });
       Fluttertoast.showToast(msg: 'Vehicle updated successfully!');
@@ -161,7 +157,10 @@ class VehicleController extends GetxController {
       isLoading.value = true;
       await _firestore.collection('vehicles').doc(vehicleId).delete();
       // .update({'owner_id': '', 'status': 'REMOVED'});
-      await _firestore.collection('fleets').doc(currentFleet!.fleetId).update({
+      await _firestore
+          .collection('fleets')
+          .doc(currentUser!.fleet!.fleetId)
+          .update({
         'vehicles': FieldValue.arrayRemove([vehicleId])
       });
       Fluttertoast.showToast(msg: 'Vehicle deleted!');
@@ -179,7 +178,6 @@ class VehicleController extends GetxController {
   clearAll() {
     numberPlateController.clear();
     vehicleModelController.clear();
-    targetTrips.clear();
     fixedRentController.clear();
     rentRules.clear();
   }

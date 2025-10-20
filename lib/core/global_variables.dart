@@ -7,7 +7,7 @@ import 'package:zero/models/user_model.dart';
 double w = 0;
 double h = 0;
 UserModel? currentUser;
-FleetModel? currentFleet;
+// FleetModel? currentFleet;
 
 class CustomWidgets {
   textRow({required String label, required String value}) {
@@ -31,7 +31,7 @@ class CustomWidgets {
       Widget? suffixIcon,
       required TextInputType textInputType,
       required String hintText,
-      required String label,
+      String? label,
       required TextEditingController textController,
       int? maxLength,
       bool? readOnly,
@@ -42,10 +42,12 @@ class CustomWidgets {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label),
-          const SizedBox(
-            height: 10,
-          ),
+          if (label != null) ...[
+            Text(label),
+            const SizedBox(
+              height: 10,
+            ),
+          ],
           TextFormField(
             controller: textController,
             style: Get.textTheme.bodyMedium!.copyWith(color: Colors.white),

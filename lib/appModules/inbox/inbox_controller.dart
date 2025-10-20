@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/models/fleet_model.dart';
 import 'package:zero/models/invitation_model.dart';
 
 class InboxController extends GetxController {
@@ -81,7 +82,7 @@ class InboxController extends GetxController {
 
   RxBool isAccepting = false.obs;
   Future<void> acceptRequest(
-      {required String invitationId, required String fleetId}) async {
+      {required String invitationId, required FleetModel fleet}) async {
     try {
       isAccepting.value = true;
       await _firestore.collection('inbox').doc(invitationId).update({
@@ -89,11 +90,11 @@ class InboxController extends GetxController {
       });
       fetchInbox();
       _firestore.collection('users').doc(currentUser!.uid).update({
-        'fleet_id': fleetId,
+        'fleet': fleet.toMap(),
         'user_role': 'DRIVER',
       });
-      currentUser = currentUser!.copyWith(fleetId: fleetId, userRole: 'DRIVER');
-      await _firestore.collection('fleets').doc(fleetId).update({
+      currentUser = currentUser!.copyWith(fleet: fleet, userRole: 'DRIVER');
+      await _firestore.collection('fleets').doc(fleet.fleetId).update({
         'drivers': FieldValue.arrayUnion([currentUser!.uid])
       });
       Fluttertoast.showToast(msg: 'Successfully joined fleet!');

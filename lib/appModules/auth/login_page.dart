@@ -14,7 +14,6 @@ class LoginPage extends GetView<AuthController> {
   Widget build(BuildContext context) {
     double h = MediaQuery.of(context).size.height;
     double w = MediaQuery.of(context).size.width;
-    print(controller.authStatus.value);
     return Scaffold(
       body: Stack(
         children: [

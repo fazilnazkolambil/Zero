@@ -26,11 +26,11 @@ class VehiclesPage extends StatelessWidget {
             },
             child: const Icon(Icons.add),
           ),
-          appBar: AppBar(
-            flexibleSpace: FlexibleSpaceBar(
-              background: vehicleStats(),
-            ),
-          ),
+          // appBar: AppBar(
+          //   flexibleSpace: FlexibleSpaceBar(
+          //     background: vehicleStats(),
+          //   ),
+          // ),
           body: Obx(
             () => RefreshIndicator(
               color: ColorConst.primaryColor,
@@ -98,12 +98,6 @@ class VehiclesPage extends StatelessWidget {
               ),
             ],
           ),
-          // ElevatedButton(
-          //     style: ElevatedButton.styleFrom(
-          //       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          //     ),
-          //     onPressed: () {},
-          //     child: const Text('Add new'))
         ],
       );
     });
@@ -140,8 +134,24 @@ class VehiclesPage extends StatelessWidget {
         itemCount: controller.vehicles.length,
         itemBuilder: (context, index) {
           final vehicle = controller.vehicles[index];
+          int vehicleTargetTrips = currentUser!.fleet!.targets['vehicle'];
           final tripCompletion = vehicle.weeklyTrips! /
-              (vehicle.targetTrips > 0 ? vehicle.targetTrips : 1);
+              (vehicleTargetTrips > 0 ? vehicleTargetTrips : 1);
+          Color progressColor;
+          switch (vehicle.weeklyTrips!) {
+            case (<= 59):
+              progressColor = Colors.red;
+            case (<= 74):
+              progressColor = Colors.deepOrange;
+            case (<= 89):
+              progressColor = Colors.orange;
+            case (<= 104):
+              progressColor = Colors.yellow;
+            case (< 120):
+              progressColor = Colors.lightGreenAccent;
+            default:
+              progressColor = Colors.green;
+          }
           return Card(
               child: ExpandablePanel(
             theme: const ExpandableThemeData(hasIcon: false, useInkWell: false),
@@ -150,20 +160,53 @@ class VehiclesPage extends StatelessWidget {
               padding: EdgeInsets.all(w * 0.03),
               child: Column(
                 children: [
-                  CustomWidgets().textRow(
-                      label: 'Last driver', value: vehicle.lastDriver!),
-                  if (vehicle.onDuty == null)
-                    CustomWidgets().textRow(
-                        label: 'Last online',
-                        value: timeago.format(
-                            DateTime.fromMillisecondsSinceEpoch(
-                                vehicle.lastOnline!))),
-                  // CustomWidgets().textRow(
-                  //     label: 'Rent per shift', value: 500.toStringAsFixed(0)),
-                  CustomWidgets().textRow(
-                      label: 'Added on',
-                      value: DateFormat('dd-MM-yyyy').format(
-                          DateTime.fromMillisecondsSinceEpoch(vehicle.addedOn)))
+                  vehicle.onDuty == null
+                      ? CustomWidgets().textRow(
+                          label: 'Last driver', value: vehicle.lastDriver!)
+                      : CustomWidgets().textRow(
+                          label: 'Current driver',
+                          value: vehicle.onDuty!.driverName),
+                  vehicle.onDuty == null
+                      ? CustomWidgets().textRow(
+                          label: 'Last online',
+                          value: timeago.format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                  vehicle.lastOnline!)))
+                      : CustomWidgets().textRow(
+                          label: 'Start time',
+                          value: timeago.format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                  vehicle.onDuty!.startTime))),
+                  vehicle.vehicleRent is double
+                      ? CustomWidgets().textRow(
+                          label: 'Vehicle Rent',
+                          value:
+                              "${vehicle.vehicleRent.toStringAsFixed(0)}/- per shift")
+                      : Column(
+                          children: [
+                            const Divider(
+                              color: Colors.white12,
+                            ),
+                            const Text('Rent per shift'),
+                            Column(
+                                children: List.generate(
+                              vehicle.vehicleRent.length,
+                              (index) {
+                                return index == vehicle.vehicleRent.length - 1
+                                    ? CustomWidgets().textRow(
+                                        label:
+                                            "${vehicle.vehicleRent[index]['min_trips']}+ trips",
+                                        value:
+                                            "${vehicle.vehicleRent[index]['rent']}")
+                                    : CustomWidgets().textRow(
+                                        label:
+                                            "${vehicle.vehicleRent[index]['min_trips']} - ${vehicle.vehicleRent[index + 1]['min_trips'] - 1} trips",
+                                        value:
+                                            "${vehicle.vehicleRent[index]['rent']}");
+                              },
+                            )),
+                          ],
+                        )
                 ],
               ),
             ),
@@ -178,12 +221,14 @@ class VehiclesPage extends StatelessWidget {
                       Icon(
                         Icons.circle,
                         size: w * 0.04,
+                        color:
+                            vehicle.onDuty == null ? Colors.green : Colors.red,
                       ),
                       SizedBox(
                         height: h * 0.01,
                       ),
                       Text(
-                        vehicle.onDuty != null ? 'Online' : 'Idle',
+                        vehicle.onDuty != null ? 'On duty' : 'On rest',
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -200,16 +245,15 @@ class VehiclesPage extends StatelessWidget {
                           value: tripCompletion > 1 ? 1 : tripCompletion,
                           minHeight: 5,
                           backgroundColor: Colors.grey.shade200,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            tripCompletion >= 1 ? Colors.green : Colors.red,
-                          ),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(progressColor),
                         ),
                       ),
                       SizedBox(height: h * 0.01),
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          '${vehicle.weeklyTrips.toString()} / ${vehicle.targetTrips.toString()} trips',
+                          '${vehicle.weeklyTrips.toString()} / $vehicleTargetTrips trips',
                           style: const TextStyle(
                             color: Colors.grey,
                             fontSize: 12,

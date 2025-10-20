@@ -1,3 +1,5 @@
+import 'package:zero/models/vehicle_model.dart';
+
 class DutyModel {
   String dutyId;
   String driverId;
@@ -5,7 +7,7 @@ class DutyModel {
   String vehicleId;
   String vehicleNumber;
   int startTime;
-  double vehicleRent;
+  dynamic vehicleRent;
   int selectedShift;
   int? endTime;
   int? totalTrips;
@@ -40,7 +42,7 @@ class DutyModel {
     String? vehicleId,
     String? vehicleNumber,
     int? startTime,
-    double? vehicleRent,
+    dynamic vehicleRent,
     int? selectedShift,
     int? endTime,
     int? totalTrips,
@@ -77,7 +79,7 @@ class DutyModel {
       vehicleId: json['vehicle_id'] ?? '',
       vehicleNumber: json['vehicle_number'] ?? '',
       startTime: json['start_time'],
-      vehicleRent: json['vehicle_rent'] ?? 0,
+      vehicleRent: json['vehicle_rent'],
       selectedShift: json['selected_shift'] ?? 0,
       endTime: json['end_time'],
       totalTrips: json['total_trips'] ?? 0,

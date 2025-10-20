@@ -1,5 +1,8 @@
+import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:zero/appModules/dutyPages/duty_controller.dart';
@@ -62,13 +65,10 @@ class HomePage extends StatelessWidget {
         appBar: currentUser!.userRole == 'VEHICLE_OWNER'
             ? null
             : AppBar(
-                title: _searchbar(),
+                title: _searchbar(homeController),
               ),
         body: Obx(
           () {
-            if (homeController.isVehiclesLoading.value) {
-              return const Center(child: CupertinoActivityIndicator());
-            }
             if (currentUser!.userRole == 'VEHICLE_OWNER') {
               return _carOwnerView(homeController);
             } else {
@@ -98,46 +98,66 @@ class HomePage extends StatelessWidget {
   }
 
   _startDuty(DutyController dutyController) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-      onPressed: () => Get.dialog(
-          barrierDismissible: false,
-          AlertDialog(
-            title: const Text('Start duty?'),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                      'Vehicle : ${dutyController.selectedVehicle.value!.numberPlate}'),
-                  const SizedBox(height: 10),
-                  Text(
-                      'Start time : ${DateFormat.jm().format(DateTime.now())}'),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () => Get.back(), child: const Text('No, cancel')),
-              TextButton(
-                  onPressed: () async {
-                    await dutyController.startDuty();
-                    Get.offAllNamed('/home');
-                  },
-                  child: const Text('Yes, confirm')),
-            ],
-          )),
-      child: const Text(
-        "Start Duty",
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
+    return Obx(
+      () => ElevatedButton(
+        style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+        onPressed: dutyController.isLocationLoading.value
+            ? null
+            : () async {
+                bool isDriverOnLocation =
+                    await dutyController.isDriverinLocation();
+                if (isDriverOnLocation) {
+                  Get.dialog(
+                      barrierDismissible: false,
+                      AlertDialog(
+                        title: const Text('Start duty?'),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                  'Vehicle : ${dutyController.selectedVehicle.value!.numberPlate}'),
+                              const SizedBox(height: 10),
+                              Text(
+                                  'Start time : ${DateFormat.jm().format(DateTime.now())}'),
+                            ],
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Get.back(),
+                              child: const Text('No, cancel')),
+                          TextButton(
+                              onPressed: () async {
+                                await dutyController.startDuty();
+                                Get.offAllNamed('/home');
+                              },
+                              child: const Text('Yes, confirm')),
+                        ],
+                      ));
+                } else {
+                  Fluttertoast.showToast(
+                      msg:
+                          'You\'re not at the location!. Go to your fleet parking location before ending duty.',
+                      backgroundColor: Colors.red);
+                }
+              },
+        child: const Text(
+          "Start Duty",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
   }
 
-  _searchbar() {
+  _searchbar(HomeController controller) {
     return TextFormField(
+      controller: controller.searchController,
+      onChanged: (value) {
+        controller.searchkey.value = value;
+      },
       style: Get.textTheme.bodyMedium!.copyWith(color: Colors.white),
       cursorColor: Colors.white,
       textInputAction: TextInputAction.next,
@@ -154,67 +174,79 @@ class HomePage extends StatelessWidget {
   }
 
   _vehicleList(HomeController controller, DutyController dutyController) {
+    if (controller.isVehiclesLoading.value) {
+      return const Center(child: CupertinoActivityIndicator());
+    }
+    List<VehicleModel> filteredAssets = controller.searchkey.value.isEmpty
+        ? controller.vehicles
+        : controller.vehicles.where((e) {
+            var search = controller.searchkey.value.toLowerCase();
+            return e.numberPlate.toLowerCase().contains(search);
+          }).toList();
+    if (filteredAssets.isEmpty) {
+      return const Center(child: Text('No vehicles found!'));
+    }
+
     return RefreshIndicator(
-      color: ColorConst.primaryColor,
-      onRefresh: () => controller.listVehicles(),
-      child: ListView.builder(
-        // physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        itemCount: controller.vehicles.length,
-        itemBuilder: (context, index) {
-          final vehicle = controller.vehicles[index];
-          return Obx(() {
-            bool isSelected = dutyController.selectedVehicle.value == vehicle;
-            return GestureDetector(
-              onTap: () {
-                dutyController.selectedVehicle.value = vehicle;
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                      color: isSelected
-                          ? Colors.white
-                          : Colors.white.withValues(alpha: 0.1),
-                      width: 2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+        color: ColorConst.primaryColor,
+        onRefresh: () => controller.listVehicles(),
+        child: ListView.builder(
+          // physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: filteredAssets.length,
+          itemBuilder: (context, index) {
+            final vehicle = filteredAssets[index];
+            return Obx(() {
+              bool isSelected = dutyController.selectedVehicle.value == vehicle;
+              return GestureDetector(
+                onTap: () {
+                  dutyController.selectedVehicle.value = vehicle;
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: isSelected
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.1),
+                        width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.directions_car,
+                            size: 32,
+                            color: Colors.grey[700],
+                          ),
                         ),
-                        child: Icon(
-                          Icons.directions_car,
-                          size: 32,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                          child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(vehicle.numberPlate),
-                          const SizedBox(height: 5),
-                          Text(
-                              'Last driver : ${vehicle.lastDriver ?? '-N/A-'}'),
-                        ],
-                      )),
-                    ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                            child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(vehicle.numberPlate),
+                            const SizedBox(height: 5),
+                            Text(
+                                'Last driver : ${vehicle.lastDriver ?? '-N/A-'}'),
+                          ],
+                        )),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          });
-        },
-      ),
-    );
+              );
+            });
+          },
+        ));
   }
 
   _carOwnerView(HomeController controller) {

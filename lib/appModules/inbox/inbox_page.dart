@@ -94,13 +94,14 @@ class InboxPage extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildInfoRow(Icons.location_on, invitation.fleet!.address),
+                    _buildInfoRow(
+                        Icons.location_on, invitation.fleet!.officeAddress),
                     const SizedBox(height: 8),
                     _buildInfoRow(Icons.phone, invitation.fleet!.contactNumber),
                     const SizedBox(height: 8),
                     _buildInfoRow(
                       Icons.directions_car,
-                      '${invitation.fleet!.fleetSize} vehicles',
+                      '${invitation.fleet!.vehicles == null ? 0 : invitation.fleet!.vehicles!.length} vehicles',
                     ),
                   ],
                 ),
@@ -134,7 +135,7 @@ class InboxPage extends StatelessWidget {
                                     foregroundColor: Colors.green),
                                 onPressed: () => controller.acceptRequest(
                                     invitationId: invitation.id,
-                                    fleetId: invitation.fleet!.fleetId),
+                                    fleet: invitation.fleet!),
                                 icon: const Icon(Icons.check),
                                 label: const Text('Accept'),
                               ),

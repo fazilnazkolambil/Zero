@@ -1,21 +1,16 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:zero/appModules/auth/login_page.dart';
 import 'package:zero/appModules/auth/onboarding_page.dart';
-import 'package:zero/appModules/auth/signup_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:zero/appModules/home/home_navigation.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/models/fleet_model.dart';
 import 'package:zero/models/user_model.dart';
 
 class AuthController extends GetxController {
@@ -43,8 +38,8 @@ class AuthController extends GetxController {
     var user = _auth.currentUser;
     final userCache = box.get('user');
     if (user != null && userCache != null) {
-      final user = jsonDecode(userCache);
-      currentUser = UserModel.fromMap(user);
+      final cacheUser = jsonDecode(userCache);
+      currentUser = UserModel.fromMap(cacheUser);
       DocumentSnapshot userData =
           await _firestore.collection('users').doc(currentUser!.uid).get();
       currentUser = UserModel.fromMap(userData.data() as Map<String, dynamic>);
@@ -160,7 +155,6 @@ class AuthController extends GetxController {
     var pickImage = await ImagePicker().pickImage(source: source);
     if (pickImage != null) {
       String imageKey = '${userId ?? currentUser!.uid}/$folderName/$label';
-      print('image  key === $imageKey');
       uploads[label] = {
         'image_file': File(pickImage.path),
         'image_path': pickImage.path,
@@ -175,14 +169,14 @@ class AuthController extends GetxController {
       isLoading.value = true;
       final file = uploads[uploadLabel];
       final storageRef = _storage.ref().child(file['image_key']);
-      final uploadTask = await storageRef.putFile(file['image_file']);
+      await storageRef.putFile(file['image_file']);
       final downloadUrl = await storageRef.getDownloadURL();
       uploads[uploadLabel]['image_url'] = downloadUrl;
       isLoading.value = false;
       return downloadUrl;
     } on FirebaseException catch (e) {
       isLoading.value = false;
-      print('Upload error: $e');
+      log('Upload error: $e');
       return null;
     }
   }
@@ -204,14 +198,13 @@ class AuthController extends GetxController {
           wallet: 0,
           lastVehicle: '');
       await _firestore.collection('users').doc(userId).set(userModel.toMap());
-      log('USER DATA 2 === ${userModel.toMap()}');
       currentUser = UserModel.fromMap(userModel.toMap());
       box.put('user', jsonEncode(userModel.toMap()));
       isLoading.value = false;
       return true;
     } catch (e) {
       isLoading.value = false;
-      print("Error in updateUserDetails : $e");
+      log("Error in updateUserDetails : $e");
       return false;
     }
   }
@@ -230,12 +223,12 @@ class AuthController extends GetxController {
       clearAll();
       await FirebaseAuth.instance.signOut();
       currentUser = null;
-      currentFleet = null;
+      // currentFleet = null;
       await box.clear();
       authStatus.value = AuthStatus.initial;
       Get.offAllNamed('/login');
     } catch (e) {
-      print('Logout error: $e');
+      log('Logout error: $e');
     }
   }
 }

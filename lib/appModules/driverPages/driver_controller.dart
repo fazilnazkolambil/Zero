@@ -4,9 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:zero/appModules/auth/auth_controller.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/models/invitation_model.dart';
 import 'package:zero/models/user_model.dart';
 
 class DriverController extends GetxController {
@@ -24,7 +22,7 @@ class DriverController extends GetxController {
       isLoading.value = true;
       var data = await _firestore
           .collection('users')
-          .where('fleet_id', isEqualTo: currentUser!.fleetId)
+          .where('fleet', isEqualTo: currentUser!.fleet!.toMap())
           .get();
       List driver = data.docs.map((e) => e.data()).toList();
       driverList.value = driver.map((e) => UserModel.fromMap(e)).toList();
@@ -75,19 +73,18 @@ class DriverController extends GetxController {
   Future<void> sendInvite(String driverId) async {
     try {
       sendingInvitation.value = true;
-      print(currentFleet!.fleetId);
-      print(currentUser!.uid);
       await FirebaseFirestore.instance.collection('inbox').add({
         'id': '',
-        'fleet': FleetInvitation(
-          address: currentFleet!.officeAddress,
-          contactNumber: currentFleet!.contactNumber,
-          fleetId: currentFleet!.fleetId,
-          fleetName: currentFleet!.fleetName,
-          fleetSize: currentFleet!.vehicles != null
-              ? currentFleet!.vehicles!.length
-              : 0,
-        ).toMap(),
+        // 'fleet': Fleet(
+        //   address: currentFleet!.officeAddress,
+        //   contactNumber: currentFleet!.contactNumber,
+        //   fleetId: currentFleet!.fleetId,
+        //   fleetName: currentFleet!.fleetName,
+        //   fleetSize: currentFleet!.vehicles != null
+        //       ? currentFleet!.vehicles!.length
+        //       : 0,
+        // ).toMap(),
+        'fleet': currentUser!.fleet!.toMap(),
         'receiver_id': driverId,
         'sender_id': currentUser!.uid,
         'status': 'PENDING',
@@ -104,6 +101,21 @@ class DriverController extends GetxController {
           backgroundColor: Colors.red);
     } finally {
       sendingInvitation.value = false;
+    }
+  }
+
+  Future<void> removeDriver({required String userId}) async {
+    try {
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .update({'fleet': null, 'user_role': 'USER'});
+      listDrivers();
+    } catch (e) {
+      log('Error removing driver : $e');
+      Fluttertoast.showToast(
+          msg: 'Something went wrong. Please try again!',
+          backgroundColor: Colors.red);
     }
   }
 }

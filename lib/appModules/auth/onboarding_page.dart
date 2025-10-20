@@ -351,6 +351,67 @@ class OnboardingPage extends GetView<AuthController> {
                 return null;
               },
             ),
+            CustomWidgets().textField(
+              readOnly: true,
+              label: 'Parking location',
+              textInputType: TextInputType.number,
+              hintText: 'Latitude, Longitude',
+              textController: onboardingController.latLongController,
+              suffixIcon: Obx(() => TextButton(
+                  onPressed: () => Get.dialog(
+                      barrierDismissible: false,
+                      AlertDialog(
+                        title: const Text('Fetch current location?'),
+                        content: const Text(
+                          'This location will be saved as the vehicle parking location. Drivers can only Start or End duty within 1km from this location.',
+                        ),
+                        actions: [
+                          TextButton(
+                              onPressed: () => Get.back(),
+                              child: const Text('No, cancel')),
+                          TextButton(
+                              onPressed: () async {
+                                await onboardingController.getLocation();
+                                Get.back();
+                              },
+                              child: const Text('Yes, confirm')),
+                        ],
+                      )),
+                  child: onboardingController.isLoading.value
+                      ? const CupertinoActivityIndicator()
+                      : const Text('Fetch'))),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Tap on the fetch location button';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 20),
+            const Text('TARGET TRIPS'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  width: w * 0.45,
+                  child: CustomWidgets().textField(
+                      textInputType: TextInputType.number,
+                      hintText: 'per shift',
+                      maxLength: 2,
+                      label: 'Driver\'s target',
+                      textController: onboardingController.driverTargetTrips),
+                ),
+                SizedBox(
+                  width: w * 0.45,
+                  child: CustomWidgets().textField(
+                      textInputType: TextInputType.number,
+                      hintText: 'per week',
+                      maxLength: 3,
+                      label: 'Vehicle\'s target',
+                      textController: onboardingController.vehicleTargetTrips),
+                )
+              ],
+            ),
             Row(
               children: [
                 Obx(
@@ -365,48 +426,6 @@ class OnboardingPage extends GetView<AuthController> {
                 ),
                 const Text("I'm looking for drivers")
               ],
-            ),
-            const Divider(
-              color: Colors.white10,
-            ),
-            Row(
-              children: [
-                const Text('Parking location'),
-                const SizedBox(width: 5),
-                Tooltip(
-                  decoration: BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(12)),
-                  textStyle: Get.textTheme.bodySmall,
-                  waitDuration: Duration.zero,
-                  preferBelow: false,
-                  padding: const EdgeInsets.all(8),
-                  margin: const EdgeInsets.symmetric(horizontal: 12),
-                  message:
-                      "Make sure you're standing at the exact spot where drivers should end their duty. This location will be saved as your fleet's endpoint.\n"
-                      "This helps prevent fake duty start/end locations.",
-                  child: const Icon(Icons.help_outline,
-                      color: Colors.grey, size: 20),
-                ),
-              ],
-            ),
-            CustomWidgets().textField(
-              readOnly: true,
-              textInputType: TextInputType.number,
-              hintText: 'Latitude, Longitude',
-              label: '',
-              textController: onboardingController.latLongController,
-              suffixIcon: Obx(() => TextButton(
-                  onPressed: () => onboardingController.getLocation(),
-                  child: onboardingController.isLoading.value
-                      ? const CupertinoActivityIndicator()
-                      : const Text('Fetch'))),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Tap on the fetch location button';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 30),
             Obx(

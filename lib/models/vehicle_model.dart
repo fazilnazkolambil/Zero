@@ -11,7 +11,6 @@ class VehicleModel {
   final int? totalTrips;
   final int? weeklyTrips;
   final int? lastOnline;
-  final int targetTrips;
   final VehicleOnDuty? onDuty;
   final String? lastDriver;
   final String? lastDriverId;
@@ -30,7 +29,6 @@ class VehicleModel {
       this.totalTrips,
       this.weeklyTrips,
       this.lastOnline,
-      required this.targetTrips,
       this.onDuty,
       this.lastDriver,
       this.lastDriverId,
@@ -51,7 +49,6 @@ class VehicleModel {
       int? weeklyTrips,
       int? startTime,
       int? lastOnline,
-      int? targetTrips,
       VehicleOnDuty? onDuty,
       String? lastDriver,
       String? lastDriverId,
@@ -69,7 +66,6 @@ class VehicleModel {
       totalTrips: totalTrips ?? this.totalTrips,
       weeklyTrips: weeklyTrips ?? this.weeklyTrips,
       lastOnline: lastOnline ?? this.lastOnline,
-      targetTrips: targetTrips ?? this.targetTrips,
       onDuty: onDuty ?? this.onDuty,
       lastDriver: lastDriver ?? this.lastDriver,
       lastDriverId: lastDriverId ?? this.lastDriverId,
@@ -91,7 +87,6 @@ class VehicleModel {
       'total_trips': totalTrips,
       'weekly_trips': weeklyTrips,
       'last_online': lastOnline,
-      'target_trips': targetTrips,
       'on_duty': onDuty,
       'last_driver': lastDriver,
       'last_driver_id': lastDriverId,
@@ -101,50 +96,25 @@ class VehicleModel {
 
   factory VehicleModel.fromMap(Map<String, dynamic> map) {
     return VehicleModel(
-      vehicleId: map['vehicle_id'] ?? '',
-      numberPlate: map['number_plate'] ?? '',
-      vehicleModel: map['vehicle_model'] ?? '',
-      ownerId: map['owner_id'] ?? '',
-      fleetId: map['fleet_id'],
-      status: map['status'] ?? '',
-      addedOn: map['added_on'] ?? '',
-      updatedOn: map['updated_on'] ?? '',
-      // vehicleImage: map['vehicle_image'] ?? '',
-      totalTrips: map['total_trips'] ?? 0,
-      weeklyTrips: map['weekly_trips'] ?? 0,
-      lastOnline: map['last_online'] ?? DateTime.now().millisecondsSinceEpoch,
-      targetTrips: map['target_trips'] ?? 0,
-      onDuty:
-          map['on_duty'] == null ? null : VehicleOnDuty.fromMap(map['on_duty']),
-      lastDriver: map['last_driver'] ?? '-N/A-',
-      lastDriverId: map['last_driver_id'] ?? '',
-      vehicleRent: map['vehicle_rent'] is List
-          ? map['vehicle_rent'].map((e) => RentRule.fromMap(e)).toList()
-          : map['vehicle_rent'],
-    );
-  }
-}
-
-class RentRule {
-  final int minTrips;
-  final double rent;
-
-  RentRule({
-    required this.minTrips,
-    required this.rent,
-  });
-
-  factory RentRule.fromMap(Map<String, dynamic> data) {
-    return RentRule(
-      minTrips: data['min_trips'] ?? 0,
-      rent: (data['rent'] as num).toDouble(),
-    );
-  }
-  Map<String, dynamic> toMap() {
-    return {
-      'min_trips': minTrips,
-      'rent': rent,
-    };
+        vehicleId: map['vehicle_id'] ?? '',
+        numberPlate: map['number_plate'] ?? '',
+        vehicleModel: map['vehicle_model'] ?? '',
+        ownerId: map['owner_id'] ?? '',
+        fleetId: map['fleet_id'],
+        status: map['status'] ?? '',
+        addedOn: map['added_on'] ?? '',
+        updatedOn: map['updated_on'] ?? '',
+        // vehicleImage: map['vehicle_image'] ?? '',
+        totalTrips: map['total_trips'] ?? 0,
+        weeklyTrips: map['weekly_trips'] ?? 0,
+        lastOnline: map['last_online'] ?? DateTime.now().millisecondsSinceEpoch,
+        // targetTrips: map['target_trips'] ?? 0,
+        onDuty: map['on_duty'] == null
+            ? null
+            : VehicleOnDuty.fromMap(map['on_duty']),
+        lastDriver: map['last_driver'] ?? '-N/A-',
+        lastDriverId: map['last_driver_id'] ?? '',
+        vehicleRent: map['vehicle_rent']);
   }
 }
 
