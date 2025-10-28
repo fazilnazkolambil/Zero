@@ -1,10 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:zero/appModules/auth/auth_controller.dart';
 import 'package:zero/appModules/auth/image_upload.dart';
-import 'package:zero/appModules/auth/login_page.dart';
 import 'package:zero/appModules/auth/onboarding_page.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';

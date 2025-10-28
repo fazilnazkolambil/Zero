@@ -3,7 +3,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:zero/appModules/dutyPages/duty_controller.dart';
-import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/customWidgets/slider_widget.dart';
 import 'package:zero/models/user_model.dart';
@@ -63,11 +62,11 @@ class DutyPage extends StatelessWidget {
             _textField(
               textInputType:
                   const TextInputType.numberWithOptions(decimal: true),
-              labelText: 'Total earnings',
-              textController: controller.totalEarningController,
+              labelText: 'Total Net fare',
+              textController: controller.totalNetFareController,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter total earnings';
+                  return 'Please enter total net fare';
                 } else if (!RegExp(r'^\d*\.?\d*$').hasMatch(value)) {
                   return 'Only numbers are allowed';
                 }
@@ -174,6 +173,14 @@ class DutyPage extends StatelessWidget {
 
   void _showSummary() {
     double topay = controller.finalValues['total_to_pay'];
+    double totalEarnings =
+        double.parse(controller.totalNetFareController.text) -
+            controller.finalValues['other_fees'];
+    double balance = totalEarnings -
+        controller.finalValues['vehicle_rent'] -
+        double.parse(controller.fuelExpenseController.text.isEmpty
+            ? '0'
+            : controller.fuelExpenseController.text);
     Get.dialog(
         barrierDismissible: false,
         AlertDialog(
@@ -182,21 +189,42 @@ class DutyPage extends StatelessWidget {
             child: Column(
               children: [
                 CustomWidgets().textRow(
-                    label: 'Total earnings',
-                    value: controller.totalEarningController.text),
-                CustomWidgets().textRow(
-                    label: 'Refund', value: controller.refundController.text),
-                CustomWidgets().textRow(
-                    label: 'Cash collected',
-                    value: controller.cashCollectedController.text),
-                const Divider(color: Colors.grey),
+                    label: 'Net fare',
+                    value: controller.totalNetFareController.text),
                 CustomWidgets().textRow(
                     label: 'Other fees (-14%)',
                     value:
                         "-${controller.finalValues['other_fees'].toStringAsFixed(2)}"),
+                const Divider(color: Colors.grey),
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: w * 0.02, vertical: w * 0.03),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Total Earnings',
+                          style: Get.textTheme.bodyMedium!
+                              .copyWith(fontWeight: FontWeight.w600)),
+                      Text(
+                        totalEarnings.toStringAsFixed(2),
+                        style: Get.textTheme.bodyMedium!
+                            .copyWith(fontWeight: FontWeight.w600),
+                      )
+                    ],
+                  ),
+                ),
+                CustomWidgets().textRow(
+                    label: 'Refund', value: controller.refundController.text),
+                CustomWidgets().textRow(
+                    label: 'Cash collected',
+                    value: '-${controller.cashCollectedController.text}'),
                 CustomWidgets().textRow(
                     label: 'Vehicle rent',
                     value: "-${controller.finalValues['vehicle_rent']}"),
+                if (controller.fuelExpenseController.text.isNotEmpty)
+                  CustomWidgets().textRow(
+                      label: 'Fuel expenses',
+                      value: "-${controller.fuelExpenseController.text}"),
                 const Divider(),
                 Padding(
                   padding: EdgeInsets.symmetric(
@@ -204,28 +232,46 @@ class DutyPage extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(topay < 0 ? 'TO PAY' : 'BALANCE'),
+                      const Text('YOUR BALANCE'),
                       Text(
-                        topay.toStringAsFixed(2),
+                        balance.toStringAsFixed(2),
                         style: Get.textTheme.bodyMedium!.copyWith(
-                            color: topay < 0 ? Colors.red : Colors.green,
+                            color: balance < 0 ? Colors.red : Colors.green,
                             fontWeight: FontWeight.w600),
                       )
                     ],
                   ),
                 ),
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        fixedSize: const Size.fromWidth(200),
-                        backgroundColor: ColorConst.primaryColor,
-                        foregroundColor: Colors.black),
-                    onPressed: () {
-                      Get.offAllNamed('/splash');
-                    },
-                    child: const Text('Done'))
               ],
             ),
           ),
+          actions: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(topay < 0 ? 'To pay' : 'To get'),
+                      Text(
+                        topay.toStringAsFixed(2),
+                        style: Get.textTheme.bodyMedium!.copyWith(
+                            color: topay >= 0 ? Colors.green : Colors.red),
+                      )
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: OutlinedButton(
+                      onPressed: () {
+                        Get.offAllNamed('/splash');
+                      },
+                      child: const Text('Done')),
+                ),
+              ],
+            )
+          ],
         ));
   }
 }

@@ -18,7 +18,7 @@ class DutyController extends GetxController {
   RxString dutyHours = '12 hrs'.obs;
 
   final TextEditingController totalTripsController = TextEditingController();
-  final TextEditingController totalEarningController = TextEditingController();
+  final TextEditingController totalNetFareController = TextEditingController();
   final TextEditingController refundController = TextEditingController();
   final TextEditingController cashCollectedController = TextEditingController();
   final TextEditingController fuelExpenseController = TextEditingController();
@@ -50,8 +50,7 @@ class DutyController extends GetxController {
       locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
     );
 
-    final Map<String, dynamic> fleetLocation =
-        currentUser!.fleet!.parkingLocation;
+    final Map<String, dynamic> fleetLocation = currentFleet!.parkingLocation;
     double distance = Geolocator.distanceBetween(
         fleetLocation['latitude'],
         fleetLocation['longitude'],
@@ -151,7 +150,7 @@ class DutyController extends GetxController {
       final vehicleRef = _firestore.collection('vehicles').doc(duty.vehicleId);
 
       int totalTrips = int.parse(totalTripsController.text);
-      double totalEarnings = double.parse(totalEarningController.text);
+      double totalNetFare = double.parse(totalNetFareController.text);
       double refund = double.parse(refundController.text);
       double cashCollected = double.parse(cashCollectedController.text);
       double fuelExpense = fuelExpenseController.text.isEmpty
@@ -174,27 +173,11 @@ class DutyController extends GetxController {
             rentRules: rentRules,
             totalTrips: totalTrips,
             selectedShift: selectedShift);
-        // final rentType = rentRules is List ? 'per_trip' : 'fixed';
-        // double vehicleRent = 0;
-        // if (rentType == 'fixed') {
-        //   vehicleRent = rentRules;
-        // } else if (rentType == 'per_trip') {
-        //   final rules = List<Map<String, dynamic>>.from(rentRules);
-        //   rules.sort((a, b) =>
-        //       (b['min_trips'] as int).compareTo(a['min_trips'] as int));
-        //   for (var rule in rules) {
-        //     if (totalTrips >= rule['min_trips']) {
-        //       vehicleRent = rule['rent'];
-        //       break;
-        //     }
-        //   }
-        // }
-
-        double otherFees = totalEarnings * 0.14;
-
+        double otherFees = totalNetFare * 0.14;
         double totalToPay =
-            ((totalEarnings - otherFees) + refund - cashCollected) -
-                vehicleRent;
+            ((totalNetFare - otherFees) + refund - cashCollected) - vehicleRent;
+        double driverBalance =
+            (totalNetFare - otherFees) - vehicleRent - fuelExpense;
 
         finalValues = {
           'vehicle_rent': vehicleRent,
@@ -203,14 +186,14 @@ class DutyController extends GetxController {
         };
 
         final dutyUpdates = {
-          'status': 'COMPLETED',
+          'duty_status': 'COMPLETED',
           'end_time': DateTime.now().millisecondsSinceEpoch,
           'total_trips': totalTrips,
-          'total_earnings': totalEarnings,
+          'total_net_fare': totalNetFare,
           'cash_collected': cashCollected,
           'refund': refund,
           'fuel_expense': fuelExpense,
-          'otherFees': otherFees,
+          'other_fees': otherFees,
           'total_to_pay': totalToPay,
           'vehicle_rent': vehicleRent,
         };
@@ -219,7 +202,10 @@ class DutyController extends GetxController {
           'wallet': FieldValue.increment(totalToPay),
           'on_duty': null,
           'weekly_shift': FieldValue.increment(selectedShift),
-          'weekly_trip': FieldValue.increment(totalTrips)
+          'weekly_trip': FieldValue.increment(totalTrips),
+          'earning_details.total_trips': FieldValue.increment(totalTrips),
+          'earning_details.total_duties': FieldValue.increment(selectedShift),
+          'earning_details.total_balance': FieldValue.increment(driverBalance),
         });
         transaction.update(vehicleRef, {
           'on_duty': null,

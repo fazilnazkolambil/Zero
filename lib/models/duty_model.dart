@@ -1,5 +1,3 @@
-import 'package:zero/models/vehicle_model.dart';
-
 class DutyModel {
   String dutyId;
   String driverId;
@@ -11,30 +9,31 @@ class DutyModel {
   int selectedShift;
   int? endTime;
   int? totalTrips;
-  double? totalEarnings;
+  double? netFare;
   double? cashCollected;
   double? totaltoPay;
   double? refund;
   double? fuelExpense;
   String dutyStatus;
-  DutyModel({
-    required this.dutyId,
-    required this.driverId,
-    required this.driverName,
-    required this.vehicleId,
-    required this.vehicleNumber,
-    required this.startTime,
-    required this.vehicleRent,
-    required this.selectedShift,
-    this.endTime,
-    this.totalTrips,
-    this.totalEarnings,
-    this.cashCollected,
-    this.refund,
-    this.fuelExpense,
-    this.totaltoPay,
-    required this.dutyStatus,
-  });
+  double? otherFees;
+  DutyModel(
+      {required this.dutyId,
+      required this.driverId,
+      required this.driverName,
+      required this.vehicleId,
+      required this.vehicleNumber,
+      required this.startTime,
+      required this.vehicleRent,
+      required this.selectedShift,
+      this.endTime,
+      this.totalTrips,
+      this.netFare,
+      this.cashCollected,
+      this.refund,
+      this.fuelExpense,
+      this.totaltoPay,
+      required this.dutyStatus,
+      this.otherFees});
   DutyModel copywith({
     String? dutyId,
     String? driverId,
@@ -46,12 +45,13 @@ class DutyModel {
     int? selectedShift,
     int? endTime,
     int? totalTrips,
-    double? totalEarnings,
+    double? netFare,
     double? cashCollected,
     double? refund,
     double? fuelExpense,
     double? totaltoPay,
     String? dutyStatus,
+    double? otherFees,
   }) =>
       DutyModel(
         dutyId: dutyId ?? this.dutyId,
@@ -64,12 +64,13 @@ class DutyModel {
         selectedShift: selectedShift ?? this.selectedShift,
         endTime: endTime ?? this.endTime,
         totalTrips: totalTrips ?? this.totalTrips,
-        totalEarnings: totalEarnings ?? this.totalEarnings,
+        netFare: netFare ?? this.netFare,
         cashCollected: cashCollected ?? this.cashCollected,
         refund: refund ?? this.refund,
         fuelExpense: fuelExpense ?? this.fuelExpense,
         totaltoPay: totaltoPay ?? this.totaltoPay,
         dutyStatus: dutyStatus ?? this.dutyStatus,
+        otherFees: otherFees ?? this.otherFees,
       );
   factory DutyModel.fromMap(Map<String, dynamic> json) {
     return DutyModel(
@@ -83,12 +84,13 @@ class DutyModel {
       selectedShift: json['selected_shift'] ?? 0,
       endTime: json['end_time'],
       totalTrips: json['total_trips'] ?? 0,
-      totalEarnings: json['total_earnings'] ?? 0,
+      netFare: json['total_net_fare'] ?? 0,
       cashCollected: json['cash_collected'] ?? 0,
       refund: json['refund'] ?? 0,
       fuelExpense: json['fuel_expense'] ?? 0,
       totaltoPay: json['total_to_pay'] ?? 0,
       dutyStatus: json['duty_status'] ?? '',
+      otherFees: json['other_fees'] ?? 0,
     );
   }
   Map<String, dynamic> toJson() => {
@@ -102,11 +104,12 @@ class DutyModel {
         'selected_shift': selectedShift,
         'end_time': endTime,
         'total_trips': totalTrips,
-        'total_earnings': totalEarnings,
+        'total_net_fare': netFare,
         'cash_collected': cashCollected,
         'refund': refund,
         'fuel_expense': fuelExpense,
         'total_to_pay': totaltoPay,
         'duty_status': dutyStatus,
+        'other_fees': otherFees,
       };
 }

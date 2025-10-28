@@ -8,3 +8,8 @@ class ColorConst {
 class ImageConst {
   static const logo = 'assets/icons/app_logo.png';
 }
+
+class NotificationTypes {
+  static const fleetInvitation = 'FLEETINVITATION';
+  static const joinRequest = 'JOINREQUEST';
+}

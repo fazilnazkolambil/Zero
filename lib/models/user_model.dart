@@ -1,6 +1,3 @@
-import 'package:zero/models/earnings_model.dart';
-import 'package:zero/models/fleet_model.dart';
-
 class UserModel {
   final String uid;
   final String fullName;
@@ -15,12 +12,14 @@ class UserModel {
   String? userRole;
   final String status;
   final double wallet;
-  final FleetModel? fleet;
+  // final FleetModel? fleet;
+  final String? fleetId;
   final int? weeklyTrip;
   final int? weeklyShift;
   final Map<String, dynamic>? blocked;
   DriverOnDuty? onDuty;
   final String lastVehicle;
+  final List? fleetRequests;
   UserModel(
       {required this.uid,
       required this.fullName,
@@ -35,12 +34,14 @@ class UserModel {
       this.userRole,
       required this.status,
       required this.wallet,
-      this.fleet,
+      // this.fleet,
+      this.fleetId,
       this.weeklyTrip,
       this.weeklyShift,
       this.blocked,
       this.onDuty,
-      required this.lastVehicle});
+      required this.lastVehicle,
+      this.fleetRequests});
 
   /// CopyWith for immutability
   UserModel copyWith(
@@ -57,13 +58,15 @@ class UserModel {
       String? userRole,
       String? status,
       double? wallet,
-      FleetModel? fleet,
+      // FleetModel? fleet,
+      String? fleetId,
       int? weeklyTrip,
       int? weeklyShift,
       int? targetTrips,
       Map<String, dynamic>? blocked,
       DriverOnDuty? onDuty,
-      String? lastVehicle}) {
+      String? lastVehicle,
+      List? fleetRequests}) {
     return UserModel(
       uid: uid ?? this.uid,
       fullName: fullName ?? this.fullName,
@@ -78,12 +81,14 @@ class UserModel {
       userRole: userRole ?? this.userRole,
       status: status ?? this.status,
       wallet: wallet ?? this.wallet,
-      fleet: fleet ?? this.fleet,
+      // fleet: fleet ?? this.fleet,
+      fleetId: fleetId ?? this.fleetId,
       weeklyTrip: weeklyTrip ?? this.weeklyTrip,
       weeklyShift: weeklyShift ?? this.weeklyShift,
       blocked: blocked ?? this.blocked,
       onDuty: onDuty ?? this.onDuty,
       lastVehicle: lastVehicle ?? this.lastVehicle,
+      fleetRequests: fleetRequests ?? this.fleetRequests,
     );
   }
 
@@ -102,12 +107,14 @@ class UserModel {
       'user_role': userRole,
       'status': status,
       'wallet': wallet,
-      'fleet': fleet,
+      // 'fleet': fleet,
+      'fleet_id': fleetId,
       'weekly_trip': weeklyTrip,
       'weekly_shift': weeklyShift,
       'blocked': blocked,
       'on_duty': onDuty,
       'last_vehicle': lastVehicle,
+      'fleet_requests': fleetRequests,
     };
   }
 
@@ -116,7 +123,7 @@ class UserModel {
         uid: map['uid'] ?? '',
         fullName: map['full_name'] ?? '',
         phoneNumber: map['phone_number'] ?? '',
-        email: map['email'] ?? '',
+        email: map['email'],
         licenceUrl: map['license_url'] ?? '',
         aadhaarUrl: map['aadhaar_url'] ?? '',
         profilePicUrl: map['profile_pic_url'] ?? '',
@@ -124,12 +131,14 @@ class UserModel {
         updatedAt: map['updated_at'] ?? DateTime.now().millisecondsSinceEpoch,
         userRole: map['user_role'],
         status: map['status'] ?? 'ACTIVE',
-        wallet: map['wallet'] ?? 0,
-        fleet: map['fleet'] == null ? null : FleetModel.fromMap(map['fleet']),
+        wallet: map['wallet'].toDouble() ?? 0,
+        // fleet: map['fleet'] == null ? null : FleetModel.fromMap(map['fleet']),
+        fleetId: map['fleet_id'],
         weeklyTrip: map['weekly_trip'] ?? 0,
         weeklyShift: map['weekly_shift'] ?? 0,
         blocked: map['blocked'],
         lastVehicle: map['last_vehicle'] ?? '',
+        fleetRequests: map['fleet_requests'] ?? [],
         onDuty: map['on_duty'] == null
             ? null
             : DriverOnDuty.fromMap(map['on_duty']),
@@ -173,5 +182,30 @@ class DriverOnDuty {
       vehicleNumber: map['vehicle_number'] ?? '',
       selectedShift: map['selected_shift'] ?? '1',
     );
+  }
+}
+
+class EarningsModel {
+  final int totalTrips;
+  final int totalDuties;
+  final double totalBalance;
+  EarningsModel(
+      {required this.totalTrips,
+      required this.totalDuties,
+      required this.totalBalance});
+
+  factory EarningsModel.fromMap(Map<String, dynamic> json) {
+    return EarningsModel(
+      totalTrips: json['total_trips'] ?? 0,
+      totalDuties: json['total_duties'] ?? 0,
+      totalBalance: json['total_balance'] ?? 0,
+    );
+  }
+  Map<String, dynamic> toMap() {
+    return {
+      'total_trips': totalTrips,
+      'total_duties': totalDuties,
+      'total_balance': totalBalance,
+    };
   }
 }

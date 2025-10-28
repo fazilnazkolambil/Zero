@@ -1,12 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:zero/appModules/auth/auth_controller.dart';
 import 'package:zero/appModules/auth/onboarding_controller.dart';
-import 'package:zero/appModules/home/home_navigation.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/appModules/auth/image_upload.dart';
@@ -20,11 +17,19 @@ class OnboardingPage extends GetView<AuthController> {
   Widget build(BuildContext context) {
     w = MediaQuery.of(context).size.width;
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+            onPressed: () => onboardingController.pageController.previousPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+            icon: const Icon(Icons.arrow_back)),
+      ),
       body: SafeArea(
         child: Obx(
           () => PageView(
             controller: onboardingController.pageController,
-            // physics: const NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             children: [
               _buildLandingPage(),
               if (onboardingController.selectedMainFlow.value == "driver")
@@ -282,7 +287,6 @@ class OnboardingPage extends GetView<AuthController> {
         key: onboardingController.formkey,
         child: Column(
           children: [
-            const SizedBox(height: 50),
             const Text(
               "Set up your Fleet",
               textAlign: TextAlign.center,
@@ -351,6 +355,35 @@ class OnboardingPage extends GetView<AuthController> {
                 return null;
               },
             ),
+            const Divider(color: Colors.white12),
+            CustomWidgets().textField(
+              textInputType: TextInputType.emailAddress,
+              textCapitalization: TextCapitalization.none,
+              hintText: 'exampleupi@bank',
+              label: 'UPI address',
+              textController: onboardingController.upiController,
+              validator: (value) {
+                if (!RegExp(r'^[\w.\-_]{2,256}@[a-zA-Z]{2,64}$')
+                    .hasMatch(value!)) {
+                  return 'Please enter a valid UPI address';
+                }
+                return null;
+              },
+            ),
+            CustomWidgets().textField(
+              textInputType: TextInputType.name,
+              textCapitalization: TextCapitalization.words,
+              hintText: 'Banking name',
+              label: 'Banking Name',
+              textController: onboardingController.bankingNameController,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your Banking name';
+                }
+                return null;
+              },
+            ),
+            const Divider(color: Colors.white12),
             CustomWidgets().textField(
               readOnly: true,
               label: 'Parking location',

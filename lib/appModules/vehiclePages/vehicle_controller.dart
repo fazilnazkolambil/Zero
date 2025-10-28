@@ -87,7 +87,7 @@ class VehicleController extends GetxController {
           status: 'ACTIVE',
           addedOn: DateTime.now().millisecondsSinceEpoch,
           updatedOn: DateTime.now().millisecondsSinceEpoch,
-          fleetId: currentUser!.fleet!.fleetId,
+          fleetId: currentFleet!.fleetId,
           vehicleRent: rentType.value == 'fixed'
               ? double.parse(fixedRentController.text)
               : rentRules.map((r) => {
@@ -104,7 +104,7 @@ class VehicleController extends GetxController {
         });
         await _firestore
             .collection('fleets')
-            .doc(currentUser!.fleet!.fleetId)
+            .doc(currentFleet!.fleetId)
             .update({
           'vehicles': FieldValue.arrayUnion([vehicleId])
         });
@@ -157,10 +157,7 @@ class VehicleController extends GetxController {
       isLoading.value = true;
       await _firestore.collection('vehicles').doc(vehicleId).delete();
       // .update({'owner_id': '', 'status': 'REMOVED'});
-      await _firestore
-          .collection('fleets')
-          .doc(currentUser!.fleet!.fleetId)
-          .update({
+      await _firestore.collection('fleets').doc(currentFleet!.fleetId).update({
         'vehicles': FieldValue.arrayRemove([vehicleId])
       });
       Fluttertoast.showToast(msg: 'Vehicle deleted!');

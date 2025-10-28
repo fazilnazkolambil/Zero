@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/models/fleet_model.dart';
-import 'package:zero/models/invitation_model.dart';
+import 'package:zero/models/notification_model.dart';
 
 class InboxController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -18,43 +17,18 @@ class InboxController extends GetxController {
     super.onInit();
   }
 
-  RxList<InvitationModel> inboxList = <InvitationModel>[].obs;
+  RxList<NotificationModel> inboxList = <NotificationModel>[].obs;
   Future<void> fetchInbox() async {
     try {
       isLoading.value = true;
-      // final currentUserId = currentUser!.uid;
-      // final currentFleetId = currentFleet?.fleetId;
-      // final currentRole = currentUser!.userRole;
-
-      // QuerySnapshot snapshot;
-
-      // if (currentRole == "driver") {
-      //   // Driver sees invitations from fleets
-      //   snapshot = await _firestore
-      //       .collection('invitations')
-      //       .where('receiver_id', isEqualTo: currentUserId)
-      //       .where('fleet_id', isNotEqualTo: null)
-      //       .get();
-      // } else {
-      //   // Fleet sees join requests from drivers
-      //   snapshot = await _firestore
-      //       .collection('invitations')
-      //       .where('fleet_id', isEqualTo: currentFleetId)
-      //       .where('fleet_id', isEqualTo: null)
-      //       .get();
-      // }
-
-      // invitations.value = snapshot.docs
-      //     .map((doc) =>
-      //         InvitationModel.fromJson(doc.data() as Map<String, dynamic>))
-      //     .toList();
-
+      inboxList.clear();
       var data = await _firestore
           .collection('inbox')
           .where('receiver_id', isEqualTo: currentUser!.uid)
+          .where('status', isEqualTo: "PENDING")
           .get();
       inboxList.value = data.docs
-          .map((e) => InvitationModel.fromJson(e.data()))
+          .map((e) => NotificationModel.fromJson(e.data()))
           .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     } finally {
@@ -63,10 +37,10 @@ class InboxController extends GetxController {
   }
 
   RxBool isDeclining = false.obs;
-  Future<void> declineRequest({required String invitationId}) async {
+  Future<void> declineRequest({required String notificationId}) async {
     try {
       isDeclining.value = true;
-      await _firestore.collection('inbox').doc(invitationId).update({
+      await _firestore.collection('inbox').doc(notificationId).update({
         'status': 'DECLINED',
       });
       fetchInbox();
@@ -81,26 +55,68 @@ class InboxController extends GetxController {
   }
 
   RxBool isAccepting = false.obs;
-  Future<void> acceptRequest(
-      {required String invitationId, required FleetModel fleet}) async {
+  Future<void> acceptFleetRequest(
+      {required String notificationId, required String fleetId}) async {
     try {
       isAccepting.value = true;
-      await _firestore.collection('inbox').doc(invitationId).update({
-        'status': 'ACCEPTED',
+      final inboxRef = _firestore.collection('inbox').doc(notificationId);
+      final userRef = _firestore.collection('users').doc(currentUser!.uid);
+      final fleetRef = _firestore.collection('fleets').doc(fleetId);
+
+      _firestore.runTransaction((transaction) async {
+        final inboxSnap = await transaction.get(inboxRef);
+        final userSnap = await transaction.get(userRef);
+        final fleetSnap = await transaction.get(fleetRef);
+        if (!inboxSnap.exists || !userSnap.exists || !fleetSnap.exists) {
+          throw Exception('Documents not found');
+        }
+        transaction.update(inboxRef, {'status': 'ACCEPTED'});
+        transaction
+            .update(userRef, {'fleet_id': fleetId, 'user_role': 'DRIVER'});
+        transaction.update(fleetRef, {
+          'drivers': FieldValue.arrayUnion([currentUser!.uid])
+        });
       });
       fetchInbox();
-      _firestore.collection('users').doc(currentUser!.uid).update({
-        'fleet': fleet.toMap(),
-        'user_role': 'DRIVER',
-      });
-      currentUser = currentUser!.copyWith(fleet: fleet, userRole: 'DRIVER');
-      await _firestore.collection('fleets').doc(fleet.fleetId).update({
-        'drivers': FieldValue.arrayUnion([currentUser!.uid])
-      });
       Fluttertoast.showToast(msg: 'Successfully joined fleet!');
       Get.offAllNamed('/home');
     } catch (e) {
-      log('Error accepting request : $e');
+      log('Error accepting fleet request : $e');
+      Fluttertoast.showToast(
+          msg: 'Something went wrong. Please try again!',
+          backgroundColor: Colors.red);
+    } finally {
+      isAccepting.value = false;
+    }
+  }
+
+  Future<void> acceptDriverRequest(
+      {required String notificationId, required String driverId}) async {
+    try {
+      isAccepting.value = true;
+      final inboxRef = _firestore.collection('inbox').doc(notificationId);
+      final userRef = _firestore.collection('users').doc(driverId);
+      final fleetRef =
+          _firestore.collection('fleets').doc(currentUser!.fleetId);
+
+      _firestore.runTransaction((transaction) async {
+        final inboxSnap = await transaction.get(inboxRef);
+        final userSnap = await transaction.get(userRef);
+        final fleetSnap = await transaction.get(fleetRef);
+        if (!inboxSnap.exists || !userSnap.exists || !fleetSnap.exists) {
+          throw Exception('Documents not found');
+        }
+        transaction.update(inboxRef, {'status': 'ACCEPTED'});
+        transaction.update(
+            userRef, {'fleet_id': currentUser!.fleetId, 'user_role': 'DRIVER'});
+        transaction.update(fleetRef, {
+          'drivers': FieldValue.arrayUnion([driverId])
+        });
+      });
+      fetchInbox();
+      Fluttertoast.showToast(msg: 'Driver request accepted!');
+    } catch (e) {
+      log('Error accepting driver request : $e');
       Fluttertoast.showToast(
           msg: 'Something went wrong. Please try again!',
           backgroundColor: Colors.red);

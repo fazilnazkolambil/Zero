@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:zero/appModules/driverPages/driver_controller.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';

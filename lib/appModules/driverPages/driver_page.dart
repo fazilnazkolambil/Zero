@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -139,7 +138,8 @@ class DriversPage extends StatelessWidget {
           itemBuilder: (context, index) {
             final driver = controller.driverList[index];
             int targetTrips =
-                currentUser!.fleet!.targets['driver']! * driver.weeklyShift!;
+                // currentUser!.fleet!.targets['driver']! * driver.weeklyShift!;
+                currentFleet!.targets['driver']! * driver.weeklyShift!;
             final tripCompletion =
                 driver.weeklyTrip! / (targetTrips > 0 ? targetTrips : 1);
             return Card(

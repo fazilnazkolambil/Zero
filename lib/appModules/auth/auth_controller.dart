@@ -46,7 +46,7 @@ class AuthController extends GetxController {
       if (currentUser!.userRole == null) {
         Get.off(() => OnboardingPage());
       } else {
-        // if (currentUser!.userRole == 'FLEET_OWNER') {
+        // if (currentUser!.fleetId != null) {
         //   await loadFleet();
         // }
         Get.offNamed('/home');
@@ -55,18 +55,6 @@ class AuthController extends GetxController {
       Get.offNamed('/login');
     }
   }
-
-  // loadFleet() async {
-  //   final fleetCache = box.get('currentFleet');
-  //   if (fleetCache != null) {
-  //     final fleet = jsonDecode(fleetCache);
-  //     currentFleet = FleetModel.fromMap(fleet);
-  //   }
-  //   DocumentSnapshot fleetData =
-  //       await _firestore.collection('fleets').doc(currentUser!.fleetId).get();
-  //   currentFleet = FleetModel.fromMap(fleetData.data() as Map<String, dynamic>);
-  //   log('CURRENTFLEET === ${currentFleet!.fleetName}');
-  // }
 
   verifyPhoneNumber() async {
     try {
@@ -223,7 +211,7 @@ class AuthController extends GetxController {
       clearAll();
       await FirebaseAuth.instance.signOut();
       currentUser = null;
-      // currentFleet = null;
+      currentFleet = null;
       await box.clear();
       authStatus.value = AuthStatus.initial;
       Get.offAllNamed('/login');

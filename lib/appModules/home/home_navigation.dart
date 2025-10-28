@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:zero/appModules/home/drawer_page.dart';
 import 'package:zero/appModules/home/home_controller.dart';
+import 'package:zero/appModules/wallet/wallet_page.dart';
 import 'package:zero/core/global_variables.dart';
 
 class HomeNavigationPage extends StatelessWidget {
@@ -29,7 +30,12 @@ class HomeNavigationPage extends StatelessWidget {
           title: Obx(() => Text(
               "${controller.homePages[controller.currentIndex.value]['label']}")),
           actions: [
-            IconButton(onPressed: () {}, icon: const Icon(Icons.wallet))
+            IconButton(
+                onPressed: () => Get.to(() => WalletPage()),
+                icon: Icon(
+                  Icons.wallet,
+                  color: currentUser!.wallet < 0 ? Colors.red : Colors.white,
+                ))
           ],
         ),
         bottomNavigationBar: controller.homePages.length > 4
@@ -51,7 +57,8 @@ class HomeNavigationPage extends StatelessWidget {
                         label: controller.homePages[index]['label'],
                         isSelected: controller.currentIndex.value == index,
                         onTap: () {
-                          controller.currentIndex.value = index;
+                          // controller.currentIndex.value = index;
+                          controller.changeIndex(index);
                         },
                       ),
                     ),

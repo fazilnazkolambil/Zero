@@ -22,6 +22,8 @@ class OnboardingController extends GetxController {
   TextEditingController latLongController = TextEditingController();
   TextEditingController driverTargetTrips = TextEditingController();
   TextEditingController vehicleTargetTrips = TextEditingController();
+  TextEditingController upiController = TextEditingController();
+  TextEditingController bankingNameController = TextEditingController();
 
   Map<String, dynamic> fleetLatLong = {};
   RxBool isFleetHiring = false.obs;
@@ -110,6 +112,8 @@ class OnboardingController extends GetxController {
         parkingLocation: fleetLatLong,
         addedOn: DateTime.now().millisecondsSinceEpoch,
         updatedOn: DateTime.now().millisecondsSinceEpoch,
+        upiId: upiController.text,
+        bankingName: bankingNameController.text.trim(),
         targets: {
           'driver': int.tryParse(driverTargetTrips.text) ?? 0,
           'vehicle': int.tryParse(vehicleTargetTrips.text) ?? 0,
@@ -122,11 +126,15 @@ class OnboardingController extends GetxController {
 
       await _firestore.collection('users').doc(currentUser!.uid).update({
         'user_role': 'FLEET_OWNER',
-        'fleet': currentFleet.toMap(),
+        // 'fleet': currentFleet.toMap(),
+        'fleet_id': docRef.id
       });
 
-      currentUser =
-          currentUser!.copyWith(userRole: 'FLEET_OWNER', fleet: currentFleet);
+      currentUser = currentUser!.copyWith(
+        userRole: 'FLEET_OWNER',
+        // fleet: currentFleet,
+        fleetId: docRef.id,
+      );
 
       Get.offAllNamed('/home');
     } catch (e) {

@@ -3,24 +3,26 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:zero/appModules/dashboard/dashboard_page.dart';
 import 'package:zero/appModules/driverPages/driver_page.dart';
+import 'package:zero/appModules/fleetPages/fleet_list.dart';
 import 'package:zero/appModules/home/home_page.dart';
 import 'package:zero/appModules/earningPages/earning_page.dart';
-import 'package:zero/appModules/checkPages/page3.dart';
 import 'package:zero/appModules/inbox/inbox_page.dart';
 import 'package:zero/appModules/profile/profile_page.dart';
 import 'package:zero/appModules/vehiclePages/vehicles_page.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/models/duty_model.dart';
+import 'package:zero/models/fleet_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class HomeController extends GetxController {
   @override
   void onInit() {
+    if (currentUser!.fleetId != null) {
+      loadFleet();
+    }
     listVehicles();
     super.onInit();
   }
@@ -40,7 +42,7 @@ class HomeController extends GetxController {
           {
             'label': 'Fleets',
             'icon': Icons.email,
-            'page': Page3(),
+            'page': FleetListPage(),
           },
           {
             'label': 'Inbox',
@@ -50,7 +52,7 @@ class HomeController extends GetxController {
           {
             'label': 'Profile',
             'icon': Icons.email,
-            'page': ProfilePage(),
+            'page': UserProfilePage(),
           },
         ].obs;
       case ('FLEET_OWNER'):
@@ -88,7 +90,7 @@ class HomeController extends GetxController {
           {
             'label': 'Profile',
             'icon': Icons.person,
-            'page': ProfilePage(),
+            'page': UserProfilePage(),
           },
         ].obs;
       default:
@@ -111,7 +113,7 @@ class HomeController extends GetxController {
           {
             'label': 'Profile',
             'icon': Icons.person,
-            'page': ProfilePage(),
+            'page': UserProfilePage(),
           },
         ].obs;
     }
@@ -130,6 +132,24 @@ class HomeController extends GetxController {
   //   listVehicles();
   // }
 
+  loadFleet() async {
+    final fleetCache = box.get('currentFleet');
+    if (fleetCache != null) {
+      final fleet = jsonDecode(fleetCache);
+      currentFleet = FleetModel.fromMap(fleet);
+    }
+    _firestore
+        .collection('fleets')
+        .doc(currentUser!.fleetId)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        currentFleet =
+            FleetModel.fromMap(snapshot.data() as Map<String, dynamic>);
+      }
+    });
+  }
+
   listVehicles() async {
     try {
       isVehiclesLoading.value = true;
@@ -137,7 +157,7 @@ class HomeController extends GetxController {
       vehicles.clear();
       var data = await _firestore
           .collection('vehicles')
-          .where('fleet_id', isEqualTo: currentUser!.fleet!.fleetId)
+          .where('fleet_id', isEqualTo: currentFleet!.fleetId)
           .where('on_duty', isNull: true)
           .get();
       vehicles.value =
@@ -156,5 +176,6 @@ class HomeController extends GetxController {
       Get.back();
     }
     currentIndex.value = index;
+    print('aaaaaaa === ${currentIndex.value} = $index');
   }
 }

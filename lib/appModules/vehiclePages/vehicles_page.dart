@@ -2,7 +2,6 @@ import 'package:expandable/expandable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:zero/appModules/vehiclePages/add_vehicle.dart';
 import 'package:zero/appModules/vehiclePages/vehicle_controller.dart';
 import 'package:zero/core/const_page.dart';
@@ -134,7 +133,7 @@ class VehiclesPage extends StatelessWidget {
         itemCount: controller.vehicles.length,
         itemBuilder: (context, index) {
           final vehicle = controller.vehicles[index];
-          int vehicleTargetTrips = currentUser!.fleet!.targets['vehicle'];
+          int vehicleTargetTrips = currentFleet!.targets['vehicle'];
           final tripCompletion = vehicle.weeklyTrips! /
               (vehicleTargetTrips > 0 ? vehicleTargetTrips : 1);
           Color progressColor;

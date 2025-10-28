@@ -1,10 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:zero/appModules/inbox/inbox_controller.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
-import 'package:zero/models/invitation_model.dart';
+import 'package:zero/models/notification_model.dart';
 
 class InboxPage extends StatelessWidget {
   InboxPage({super.key});
@@ -15,7 +18,7 @@ class InboxPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: controller.inboxList.isEmpty
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -37,7 +40,15 @@ class InboxPage extends StatelessWidget {
                     itemCount: controller.inboxList.length,
                     itemBuilder: (context, index) {
                       final invitation = controller.inboxList[index];
-                      return invitationCard(invitation);
+                      switch (invitation.notificationType) {
+                        case (NotificationTypes.fleetInvitation):
+                          return fleetInvitations(invitation);
+                        case (NotificationTypes.joinRequest):
+                          return joinRequest(invitation);
+                        default:
+                          return Text('bbbbb');
+                      }
+                      //
                     },
                   );
                 },
@@ -46,154 +57,219 @@ class InboxPage extends StatelessWidget {
     );
   }
 
-  Widget invitationCard(InvitationModel invitation) {
-    switch (invitation.status) {
-      case 'PENDING':
-        return Card(
-          margin: const EdgeInsets.all(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  Widget fleetInvitations(NotificationModel invitation) {
+    return Card(
+      margin: const EdgeInsets.all(12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 25,
-                      child: Icon(
-                          invitation.fleet != null
-                              ? Icons.directions_car
-                              : Icons.person,
-                          color: Colors.grey),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(invitation.fleet!.fleetName,
-                              style: Get.textTheme.bodyLarge),
-                          const SizedBox(height: 4),
-                          Text(
-                              invitation.fleet != null
-                                  ? 'Fleet invitation'
-                                  : 'Join request',
-                              style: Get.textTheme.bodySmall!
-                                  .copyWith(color: Colors.grey)),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      CustomWidgets().formatTimestamp(invitation.timestamp),
-                      style:
-                          Get.textTheme.bodySmall!.copyWith(color: Colors.grey),
-                    ),
-                  ],
+                const CircleAvatar(
+                  radius: 25,
+                  child: Icon(Icons.directions_car, color: Colors.grey),
                 ),
-                const Divider(color: Colors.white10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoRow(
-                        Icons.location_on, invitation.fleet!.officeAddress),
-                    const SizedBox(height: 8),
-                    _buildInfoRow(Icons.phone, invitation.fleet!.contactNumber),
-                    const SizedBox(height: 8),
-                    _buildInfoRow(
-                      Icons.directions_car,
-                      '${invitation.fleet!.vehicles == null ? 0 : invitation.fleet!.vehicles!.length} vehicles',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Obx(
-                  () => Row(
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: controller.isDeclining.value
-                            ? const Center(
-                                child: CupertinoActivityIndicator(),
-                              )
-                            : ElevatedButton.icon(
-                                onPressed: () => controller.declineRequest(
-                                    invitationId: invitation.id),
-                                icon: const Icon(Icons.close),
-                                label: const Text('Decline'),
-                                style: ElevatedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                ),
-                              ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: controller.isAccepting.value
-                            ? const Center(
-                                child: CupertinoActivityIndicator(),
-                              )
-                            : OutlinedButton.icon(
-                                style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.green),
-                                onPressed: () => controller.acceptRequest(
-                                    invitationId: invitation.id,
-                                    fleet: invitation.fleet!),
-                                icon: const Icon(Icons.check),
-                                label: const Text('Accept'),
-                              ),
-                      ),
+                      Text(invitation.fleet!.fleetName,
+                          style: Get.textTheme.bodyLarge),
+                      const SizedBox(height: 4),
+                      Text('Fleet invitation',
+                          style: Get.textTheme.bodySmall!
+                              .copyWith(color: Colors.grey)),
                     ],
                   ),
                 ),
+                Text(
+                  CustomWidgets().formatTimestamp(invitation.timestamp),
+                  style: Get.textTheme.bodySmall!.copyWith(color: Colors.grey),
+                ),
               ],
             ),
-          ),
-        );
-      case 'DECLINED':
-        return Card(
-          margin: const EdgeInsets.all(12),
-          color: Colors.red.withValues(alpha: 0.1),
-          child: ListTile(
-            leading: CircleAvatar(
-              radius: 25,
-              child: Icon(
-                  invitation.fleet != null
-                      ? Icons.directions_car
-                      : Icons.person,
-                  color: Colors.grey),
+            const Divider(color: Colors.white10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoRow(
+                    Icons.location_on, invitation.fleet!.officeAddress),
+                const SizedBox(height: 8),
+                _buildInfoRow(Icons.phone, invitation.fleet!.contactNumber),
+                const SizedBox(height: 8),
+                _buildInfoRow(
+                  Icons.directions_car,
+                  '${invitation.fleet!.vehicles == null ? 0 : invitation.fleet!.vehicles!.length} vehicles',
+                ),
+              ],
             ),
-            title: Text(invitation.fleet!.fleetName),
-            subtitle: Text(invitation.fleet != null
-                ? 'Fleet invitation'
-                : 'Driver request'),
-            trailing: Text(
-              'Declined',
-              style: Get.textTheme.bodySmall!.copyWith(color: Colors.red),
+            const SizedBox(height: 10),
+            Obx(
+              () => Row(
+                children: [
+                  Expanded(
+                    child: controller.isDeclining.value
+                        ? const Center(
+                            child: CupertinoActivityIndicator(),
+                          )
+                        : ElevatedButton.icon(
+                            onPressed: () => controller.declineRequest(
+                                notificationId: invitation.id),
+                            icon: const Icon(Icons.close),
+                            label: const Text('Decline'),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: controller.isAccepting.value
+                        ? const Center(
+                            child: CupertinoActivityIndicator(),
+                          )
+                        : OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.green),
+                            onPressed: () => controller.acceptFleetRequest(
+                                notificationId: invitation.id,
+                                fleetId: invitation.fleet!.fleetId),
+                            icon: const Icon(Icons.check),
+                            label: const Text('Accept'),
+                          ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        );
-      default:
-        return Card(
-          color: Colors.green.withValues(alpha: 0.1),
-          margin: const EdgeInsets.all(12),
-          child: ListTile(
-            leading: CircleAvatar(
-              radius: 25,
-              child: Icon(
-                  invitation.fleet != null
-                      ? Icons.directions_car
-                      : Icons.person,
-                  color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget joinRequest(NotificationModel invitation) {
+    final user = invitation.user;
+    log(user!.toMap().toString());
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Colors.blue.shade50,
+                  backgroundImage: NetworkImage(user.profilePicUrl),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.fullName,
+                        style: Get.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('join request',
+                          style: Get.textTheme.bodySmall!
+                              .copyWith(color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                Text(
+                  CustomWidgets().formatTimestamp(invitation.timestamp),
+                  style: Get.textTheme.bodySmall!.copyWith(color: Colors.grey),
+                ),
+              ],
             ),
-            title: Text(invitation.fleet!.fleetName),
-            subtitle: Text(invitation.fleet != null
-                ? 'Fleet invitation'
-                : 'Driver request'),
-            trailing: Text(
-              'Accepted',
-              style: Get.textTheme.bodySmall!.copyWith(color: Colors.green),
+            const Divider(color: Colors.white12),
+            CustomWidgets()
+                .textRow(label: 'Contact number', value: user.phoneNumber),
+            CustomWidgets()
+                .textRow(label: 'Email', value: user.email ?? '-Not provided-'),
+            const Divider(color: Colors.white12),
+            CustomWidgets().textRow(
+                label: 'Duties taken',
+                value: user.earningDetails != null
+                    ? user.earningDetails!.totalDuties.toString()
+                    : '0'),
+            CustomWidgets().textRow(
+                label: 'Trips completed',
+                value: user.earningDetails != null
+                    ? user.earningDetails!.totalTrips.toString()
+                    : '0'),
+            const Divider(color: Colors.white12),
+            ListTile(
+              onTap: () async {
+                await launchUrl(Uri.parse(user.licenceUrl));
+              },
+              title: Text(
+                'Diving licence',
+                style: Get.textTheme.bodyMedium!.copyWith(color: Colors.grey),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                  color: Colors.grey, size: 20),
             ),
-          ),
-        );
-    }
+            ListTile(
+              onTap: () async {
+                await launchUrl(Uri.parse(user.aadhaarUrl));
+              },
+              title: Text(
+                'Aadhaar',
+                style: Get.textTheme.bodyMedium!.copyWith(color: Colors.grey),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios_rounded,
+                  color: Colors.grey, size: 20),
+            ),
+            const Divider(color: Colors.white12),
+            Row(
+              children: [
+                Expanded(
+                  child: controller.isDeclining.value
+                      ? const Center(
+                          child: CupertinoActivityIndicator(),
+                        )
+                      : ElevatedButton.icon(
+                          onPressed: () => controller.declineRequest(
+                              notificationId: invitation.id),
+                          icon: const Icon(Icons.close),
+                          label: const Text('Decline'),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: controller.isAccepting.value
+                      ? const Center(
+                          child: CupertinoActivityIndicator(),
+                        )
+                      : OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.green),
+                          onPressed: () => controller.acceptDriverRequest(
+                              notificationId: invitation.id,
+                              driverId: invitation.senderId),
+                          icon: const Icon(Icons.check),
+                          label: const Text('Accept'),
+                        ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildInfoRow(IconData icon, String text) {

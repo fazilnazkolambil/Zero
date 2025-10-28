@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
+import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
+import 'package:zero/models/notification_model.dart';
 import 'package:zero/models/user_model.dart';
 
 class DriverController extends GetxController {
@@ -22,7 +24,8 @@ class DriverController extends GetxController {
       isLoading.value = true;
       var data = await _firestore
           .collection('users')
-          .where('fleet', isEqualTo: currentUser!.fleet!.toMap())
+          // .where('fleet', isEqualTo: currentUser!.fleet!.toMap())
+          .where('fleet_id', isEqualTo: currentUser!.fleetId)
           .get();
       List driver = data.docs.map((e) => e.data()).toList();
       driverList.value = driver.map((e) => UserModel.fromMap(e)).toList();
@@ -73,23 +76,19 @@ class DriverController extends GetxController {
   Future<void> sendInvite(String driverId) async {
     try {
       sendingInvitation.value = true;
-      await FirebaseFirestore.instance.collection('inbox').add({
-        'id': '',
-        // 'fleet': Fleet(
-        //   address: currentFleet!.officeAddress,
-        //   contactNumber: currentFleet!.contactNumber,
-        //   fleetId: currentFleet!.fleetId,
-        //   fleetName: currentFleet!.fleetName,
-        //   fleetSize: currentFleet!.vehicles != null
-        //       ? currentFleet!.vehicles!.length
-        //       : 0,
-        // ).toMap(),
-        'fleet': currentUser!.fleet!.toMap(),
-        'receiver_id': driverId,
-        'sender_id': currentUser!.uid,
-        'status': 'PENDING',
-        'timestamp': DateTime.now().millisecondsSinceEpoch,
-      }).then((value) {
+      NotificationModel notification = NotificationModel(
+        id: '',
+        notificationType: NotificationTypes.fleetInvitation,
+        senderId: currentUser!.uid,
+        receiverId: driverId,
+        status: 'PENDING',
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+        fleet: currentFleet,
+      );
+      await FirebaseFirestore.instance
+          .collection('inbox')
+          .add(notification.toMap())
+          .then((value) {
         value.update({'id': value.id});
       });
       Fluttertoast.showToast(msg: 'Invitation sent successfully');

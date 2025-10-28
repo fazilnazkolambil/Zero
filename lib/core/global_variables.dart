@@ -7,7 +7,8 @@ import 'package:zero/models/user_model.dart';
 double w = 0;
 double h = 0;
 UserModel? currentUser;
-// FleetModel? currentFleet;
+String appVersion = '1.0.0';
+FleetModel? currentFleet;
 
 class CustomWidgets {
   textRow({required String label, required String value}) {
@@ -82,7 +83,7 @@ class CustomWidgets {
     final difference = now.difference(date);
 
     if (difference.inDays == 0) {
-      return DateFormat('HH:mm').format(date);
+      return DateFormat('hh:mm a').format(date);
     } else if (difference.inDays == 1) {
       return 'Yesterday';
     } else if (difference.inDays < 7) {

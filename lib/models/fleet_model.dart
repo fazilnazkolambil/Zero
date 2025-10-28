@@ -11,6 +11,8 @@ class FleetModel {
   final int addedOn;
   final int updatedOn;
   final Map<String, dynamic> targets;
+  final String upiId;
+  final String bankingName;
 
   FleetModel({
     required this.fleetId,
@@ -25,6 +27,8 @@ class FleetModel {
     required this.addedOn,
     required this.updatedOn,
     required this.targets,
+    required this.upiId,
+    required this.bankingName,
   });
 
   FleetModel copyWith({
@@ -40,6 +44,8 @@ class FleetModel {
     int? addedOn,
     int? updatedOn,
     Map<String, dynamic>? targets,
+    String? upiId,
+    String? bankingName,
   }) {
     return FleetModel(
       fleetId: fleetId ?? this.fleetId,
@@ -54,6 +60,8 @@ class FleetModel {
       addedOn: addedOn ?? this.addedOn,
       updatedOn: updatedOn ?? this.updatedOn,
       targets: targets ?? this.targets,
+      upiId: upiId ?? this.upiId,
+      bankingName: bankingName ?? this.bankingName,
     );
   }
 
@@ -71,6 +79,8 @@ class FleetModel {
       'added_on': addedOn,
       'updated_on': updatedOn,
       'targets': targets,
+      'upi_id': upiId,
+      'banking_name': bankingName,
     };
   }
 
@@ -88,6 +98,8 @@ class FleetModel {
       addedOn: map['added_on'] ?? 0,
       updatedOn: map['updated_on'] ?? 0,
       targets: map['targets'] ?? {'driver': 0, 'vehicle': 0},
+      upiId: map['upi_id'],
+      bankingName: map['banking_name'],
     );
   }
 }

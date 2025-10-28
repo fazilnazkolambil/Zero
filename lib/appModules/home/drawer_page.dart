@@ -74,22 +74,21 @@ class DrawerPage extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
-            onTap: () => showDialog(
-                context: context,
+            onTap: () => Get.dialog(
                 barrierDismissible: false,
-                builder: (context) => AlertDialog(
-                      title: const Text('Logout?'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Get.back(),
-                            child: const Text('No, cancel')),
-                        TextButton(
-                            onPressed: () async =>
-                                Get.put(AuthController()).logoutUser(),
-                            child: const Text('Yes, continue')),
-                      ],
-                    )),
+                AlertDialog(
+                  title: const Text('Logout?'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('No, cancel')),
+                    TextButton(
+                        onPressed: () async =>
+                            Get.put(AuthController()).logoutUser(),
+                        child: const Text('Yes, confirm')),
+                  ],
+                )),
           ),
         ],
       ),
