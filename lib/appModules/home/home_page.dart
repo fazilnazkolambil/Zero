@@ -231,7 +231,8 @@ class HomePage extends StatelessWidget {
                             child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(vehicle.numberPlate),
+                            Text(
+                                "${vehicle.numberPlate} - ${vehicle.vehicleModel}"),
                             const SizedBox(height: 5),
                             Text(
                                 'Last driver : ${vehicle.lastDriver ?? '-N/A-'}'),

@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:zero/appModules/inbox/inbox_controller.dart';
 import 'package:zero/core/const_page.dart';
@@ -17,43 +18,52 @@ class InboxPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: controller.inboxList.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'No new messages',
-                  ),
-                ],
-              ),
-            )
-          : RefreshIndicator(
-              color: ColorConst.primaryColor,
-              onRefresh: () => controller.fetchInbox(),
-              child: Obx(
-                () {
-                  if (controller.isLoading.value) {
-                    return const Center(child: CupertinoActivityIndicator());
-                  }
-                  return ListView.builder(
-                    itemCount: controller.inboxList.length,
-                    itemBuilder: (context, index) {
-                      final invitation = controller.inboxList[index];
-                      switch (invitation.notificationType) {
-                        case (NotificationTypes.fleetInvitation):
-                          return fleetInvitations(invitation);
-                        case (NotificationTypes.joinRequest):
-                          return joinRequest(invitation);
-                        default:
-                          return Text('bbbbb');
-                      }
-                      //
-                    },
-                  );
-                },
-              ),
-            ),
+      body: RefreshIndicator(
+        color: ColorConst.primaryColor,
+        onRefresh: () => controller.fetchInbox(),
+        child: Obx(
+          () {
+            if (controller.isLoading.value) {
+              return const Center(child: CupertinoActivityIndicator());
+            }
+            if (controller.inboxList.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'No new messages',
+                    ),
+                    TextButton.icon(
+                      onPressed: () => controller.fetchInbox(),
+                      label: const Text('Refresh'),
+                      icon: const Icon(Icons.refresh),
+                    )
+                  ],
+                ),
+              );
+            }
+            return ListView.builder(
+              itemCount: controller.inboxList.length,
+              itemBuilder: (context, index) {
+                final invitation = controller.inboxList[index];
+                switch (invitation.notificationType) {
+                  case (NotificationTypes.fleetInvitation):
+                    return fleetInvitations(invitation);
+                  case (NotificationTypes.joinRequest):
+                    return joinRequest(invitation);
+                  case (NotificationTypes.payment):
+                    return paymentRequest(invitation);
+                  default:
+                    return const Center(
+                        child: Text('Failed to load the message'));
+                }
+                //
+              },
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -111,35 +121,31 @@ class InboxPage extends StatelessWidget {
               () => Row(
                 children: [
                   Expanded(
-                    child: controller.isDeclining.value
-                        ? const Center(
-                            child: CupertinoActivityIndicator(),
-                          )
-                        : ElevatedButton.icon(
-                            onPressed: () => controller.declineRequest(
-                                notificationId: invitation.id),
-                            icon: const Icon(Icons.close),
-                            label: const Text('Decline'),
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.red,
-                            ),
-                          ),
+                    child: ElevatedButton.icon(
+                      onPressed: controller.actionLoading.value
+                          ? null
+                          : () => controller.declineRequest(
+                              notificationId: invitation.id),
+                      icon: const Icon(Icons.close),
+                      label: const Text('Decline'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: controller.isAccepting.value
-                        ? const Center(
-                            child: CupertinoActivityIndicator(),
-                          )
-                        : OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.green),
-                            onPressed: () => controller.acceptFleetRequest(
-                                notificationId: invitation.id,
-                                fleetId: invitation.fleet!.fleetId),
-                            icon: const Icon(Icons.check),
-                            label: const Text('Accept'),
-                          ),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.green),
+                      onPressed: controller.actionLoading.value
+                          ? null
+                          : () => controller.acceptFleetRequest(
+                              notificationId: invitation.id,
+                              fleetId: invitation.fleet!.fleetId),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Accept'),
+                    ),
                   ),
                 ],
               ),
@@ -151,8 +157,7 @@ class InboxPage extends StatelessWidget {
   }
 
   Widget joinRequest(NotificationModel invitation) {
-    final user = invitation.user;
-    log(user!.toMap().toString());
+    final user = invitation.user!;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
@@ -179,7 +184,7 @@ class InboxPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text('join request',
+                      Text('Join request',
                           style: Get.textTheme.bodySmall!
                               .copyWith(color: Colors.grey)),
                     ],
@@ -231,40 +236,132 @@ class InboxPage extends StatelessWidget {
                   color: Colors.grey, size: 20),
             ),
             const Divider(color: Colors.white12),
+            Obx(
+              () => Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: controller.actionLoading.value
+                          ? null
+                          : () => controller.declineRequest(
+                              notificationId: invitation.id),
+                      icon: const Icon(Icons.close),
+                      label: const Text('Decline'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.green),
+                      onPressed: controller.actionLoading.value
+                          ? null
+                          : () => controller.acceptDriverRequest(
+                              notificationId: invitation.id,
+                              driverId: invitation.senderId),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Accept'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget paymentRequest(NotificationModel notification) {
+    final payment = notification.transaction!;
+    bool isOnline = payment.paymentMethod == 'ONLINE';
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Row(
               children: [
-                Expanded(
-                  child: controller.isDeclining.value
-                      ? const Center(
-                          child: CupertinoActivityIndicator(),
-                        )
-                      : ElevatedButton.icon(
-                          onPressed: () => controller.declineRequest(
-                              notificationId: invitation.id),
-                          icon: const Icon(Icons.close),
-                          label: const Text('Decline'),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                          ),
-                        ),
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.orange.withValues(alpha: 0.15),
+                  child: const Center(
+                      child: Icon(Icons.payment, color: Colors.orange)),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: controller.isAccepting.value
-                      ? const Center(
-                          child: CupertinoActivityIndicator(),
-                        )
-                      : OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.green),
-                          onPressed: () => controller.acceptDriverRequest(
-                              notificationId: invitation.id,
-                              driverId: invitation.senderId),
-                          icon: const Icon(Icons.check),
-                          label: const Text('Accept'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        payment.senderName,
+                        style: Get.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text("₹ ${payment.amount.toStringAsFixed(2)}",
+                          style: Get.textTheme.bodyMedium!.copyWith(
+                              color: Colors.green,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      isOnline ? 'By UPI' : 'By cash',
+                      style: Get.textTheme.bodyMedium!
+                          .copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      CustomWidgets().formatTimestamp(notification.timestamp),
+                      style:
+                          Get.textTheme.bodySmall!.copyWith(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ],
+            ),
+            const Divider(color: Colors.white12),
+            Obx(
+              () => Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: controller.actionLoading.value
+                          ? null
+                          : () => controller.declinePayment(
+                              notificationId: notification.id,
+                              transactionId: payment.transactionId),
+                      icon: const Icon(Icons.close),
+                      label: const Text('Decline'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.green),
+                      onPressed: controller.actionLoading.value
+                          ? null
+                          : () => controller.acceptPayment(
+                              notification: notification),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Accept'),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

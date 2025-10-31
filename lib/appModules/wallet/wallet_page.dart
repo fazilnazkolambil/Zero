@@ -1,5 +1,9 @@
+import 'dart:developer';
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_upi_india/flutter_upi_india.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -202,11 +206,11 @@ class WalletPage extends StatelessWidget {
 
   Color _statusColor(String status) {
     switch (status) {
-      case 'APPROVED':
+      case 'ACCEPTED':
         return Colors.green;
       case 'PENDING':
         return Colors.orange;
-      case 'REJECTED':
+      case 'DECLINED':
         return Colors.red;
       default:
         return Colors.grey;
@@ -215,11 +219,11 @@ class WalletPage extends StatelessWidget {
 
   IconData _icon(String status) {
     switch (status) {
-      case 'APPROVED':
+      case 'ACCEPTED':
         return Icons.done_outline_rounded;
       case 'PENDING':
         return Icons.info_outline;
-      case 'REJECTED':
+      case 'DECLINED':
         return Icons.close;
       default:
         return Icons.circle;
@@ -261,21 +265,23 @@ class WalletPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (double.parse(controller.payingAmount.text) > 0 &&
                             controller.payingAmount.text.isNotEmpty) {
-                          if (controller.payingAmount.text ==
-                                  controller.transactions.first.amount
-                                      .toString()
-                                      .split('.')
-                                      .first &&
-                              controller.transactions.first.status ==
-                                  'PENDING') {
+                          if (
+                              // controller.payingAmount.text ==
+                              //       controller.transactions.first.amount
+                              //           .toString()
+                              //           .split('.')
+                              //           .first &&
+                              controller.transactions.isNotEmpty &&
+                                  controller.transactions.first.status ==
+                                      'PENDING') {
                             Fluttertoast.showToast(
                                 msg:
                                     'Last transaction is on pending. Please wait until it get approved or declined');
                           } else {
-                            controller.makePayment('OFFLINE');
+                            await controller.makePayment('OFFLINE');
                           }
                         } else {
                           Fluttertoast.showToast(
@@ -301,15 +307,16 @@ class WalletPage extends StatelessWidget {
                           );
                           return;
                         }
-                        bool isOpened = await controller.upiPayment();
-                        if (isOpened) {
-                          _showPaymentConfirmationDialog();
-                        } else {
-                          Fluttertoast.showToast(
-                            msg: "Something went wrong!. Please try again",
-                            backgroundColor: Colors.red,
-                          );
-                        }
+                        await controller.upiPayment();
+                        // bool isOpened = await controller.upiPayment();
+                        // if (isOpened) {
+                        //   _showPaymentConfirmationDialog();
+                        // } else {
+                        //   Fluttertoast.showToast(
+                        //     msg: "Something went wrong!. Please try again",
+                        //     backgroundColor: Colors.red,
+                        //   );
+                        // }
                       },
                       child: const Text('Pay online')),
                 ),

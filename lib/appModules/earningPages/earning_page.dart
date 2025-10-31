@@ -241,7 +241,7 @@ class EarningPage extends StatelessWidget {
 
   Widget _weeklyStats() {
     double totalEarnings =
-        controller.totalNetFare.value - controller.otherFees.value;
+        controller.totalEarnings.value - controller.otherFees.value;
     double balance = totalEarnings -
         controller.totalRent.value -
         controller.fuelExpenses.value;
@@ -315,7 +315,7 @@ class EarningPage extends StatelessWidget {
 
   Widget stateBreakdown() {
     double totalEarnings =
-        controller.totalNetFare.value - controller.otherFees.value;
+        controller.totalEarnings.value - controller.otherFees.value;
     double balance = totalEarnings -
         controller.totalRent.value -
         controller.fuelExpenses.value;
@@ -329,8 +329,8 @@ class EarningPage extends StatelessWidget {
                   .copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           CustomWidgets().textRow(
-              label: 'Net fare',
-              value: '₹ ${controller.totalNetFare.value.toStringAsFixed(2)}'),
+              label: 'Your earnings',
+              value: '₹ ${controller.totalEarnings.value.toStringAsFixed(2)}'),
           CustomWidgets().textRow(
               label: 'Others fees',
               value: '-${controller.otherFees.value.toStringAsFixed(2)}'),
@@ -354,8 +354,8 @@ class EarningPage extends StatelessWidget {
             ),
           ),
           CustomWidgets().textRow(
-              label: 'Refund',
-              value: '₹ ${controller.totalRefund.value.toStringAsFixed(2)}'),
+              label: 'Toll',
+              value: '₹ ${controller.totalToll.value.toStringAsFixed(2)}'),
           CustomWidgets().textRow(
               label: 'Cash collected',
               value: '₹ ${controller.cashCollected.value.toStringAsFixed(2)}'),

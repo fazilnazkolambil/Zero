@@ -27,19 +27,22 @@ class InboxController extends GetxController {
           .where('receiver_id', isEqualTo: currentUser!.uid)
           .where('status', isEqualTo: "PENDING")
           .get();
+      print('aaaa');
       inboxList.value = data.docs
           .map((e) => NotificationModel.fromJson(e.data()))
           .toList()
         ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      print('bbb');
     } finally {
+      print('cccc');
       isLoading.value = false;
     }
   }
 
-  RxBool isDeclining = false.obs;
+  RxBool actionLoading = false.obs;
   Future<void> declineRequest({required String notificationId}) async {
     try {
-      isDeclining.value = true;
+      actionLoading.value = true;
       await _firestore.collection('inbox').doc(notificationId).update({
         'status': 'DECLINED',
       });
@@ -50,15 +53,36 @@ class InboxController extends GetxController {
           msg: 'Something went wrong. Please try again!',
           backgroundColor: Colors.red);
     } finally {
-      isDeclining.value = false;
+      actionLoading.value = false;
     }
   }
 
-  RxBool isAccepting = false.obs;
+  Future<void> declinePayment(
+      {required String notificationId, required String transactionId}) async {
+    try {
+      actionLoading.value = true;
+      await _firestore.collection('inbox').doc(notificationId).update({
+        'status': 'DECLINED',
+      });
+      await _firestore
+          .collection('transactions')
+          .doc(transactionId)
+          .update({'status': 'DECLINED'});
+      fetchInbox();
+    } catch (e) {
+      log('Error declining payment : $e');
+      Fluttertoast.showToast(
+          msg: 'Something went wrong. Please try again!',
+          backgroundColor: Colors.red);
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
   Future<void> acceptFleetRequest(
       {required String notificationId, required String fleetId}) async {
     try {
-      isAccepting.value = true;
+      actionLoading.value = true;
       final inboxRef = _firestore.collection('inbox').doc(notificationId);
       final userRef = _firestore.collection('users').doc(currentUser!.uid);
       final fleetRef = _firestore.collection('fleets').doc(fleetId);
@@ -79,21 +103,21 @@ class InboxController extends GetxController {
       });
       fetchInbox();
       Fluttertoast.showToast(msg: 'Successfully joined fleet!');
-      Get.offAllNamed('/home');
+      Get.offAllNamed('/splash');
     } catch (e) {
       log('Error accepting fleet request : $e');
       Fluttertoast.showToast(
           msg: 'Something went wrong. Please try again!',
           backgroundColor: Colors.red);
     } finally {
-      isAccepting.value = false;
+      actionLoading.value = false;
     }
   }
 
   Future<void> acceptDriverRequest(
       {required String notificationId, required String driverId}) async {
     try {
-      isAccepting.value = true;
+      actionLoading.value = true;
       final inboxRef = _firestore.collection('inbox').doc(notificationId);
       final userRef = _firestore.collection('users').doc(driverId);
       final fleetRef =
@@ -104,7 +128,10 @@ class InboxController extends GetxController {
         final userSnap = await transaction.get(userRef);
         final fleetSnap = await transaction.get(fleetRef);
         if (!inboxSnap.exists || !userSnap.exists || !fleetSnap.exists) {
-          throw Exception('Documents not found');
+          transaction.delete(inboxRef);
+          Fluttertoast.showToast(
+              msg: 'Document doesn\'t exist', backgroundColor: Colors.red);
+          return;
         }
         transaction.update(inboxRef, {'status': 'ACCEPTED'});
         transaction.update(
@@ -121,7 +148,44 @@ class InboxController extends GetxController {
           msg: 'Something went wrong. Please try again!',
           backgroundColor: Colors.red);
     } finally {
-      isAccepting.value = false;
+      actionLoading.value = false;
+    }
+  }
+
+  Future<void> acceptPayment({required NotificationModel notification}) async {
+    try {
+      actionLoading.value = true;
+      final inboxRef = _firestore.collection('inbox').doc(notification.id);
+      final userRef = _firestore.collection('users').doc(notification.senderId);
+      final transactionRef = _firestore
+          .collection('transactions')
+          .doc(notification.transaction!.transactionId);
+
+      _firestore.runTransaction((transaction) async {
+        final inboxSnap = await transaction.get(inboxRef);
+        final userSnap = await transaction.get(userRef);
+        final transactionsSnap = await transaction.get(transactionRef);
+        if (!inboxSnap.exists || !userSnap.exists || !transactionsSnap.exists) {
+          transaction.delete(inboxRef);
+          Fluttertoast.showToast(
+              msg: 'Document doesn\'t exist', backgroundColor: Colors.red);
+          return;
+        }
+        transaction.update(inboxRef, {'status': 'ACCEPTED'});
+        transaction.update(userRef, {
+          'wallet': FieldValue.increment(notification.transaction!.amount),
+        });
+        transaction.update(transactionRef, {'status': 'ACCEPTED'});
+      });
+      fetchInbox();
+      Fluttertoast.showToast(msg: 'Payment request accepted!');
+    } catch (e) {
+      log('Error accepting payment request : $e');
+      Fluttertoast.showToast(
+          msg: 'Something went wrong. Please try again!',
+          backgroundColor: Colors.red);
+    } finally {
+      actionLoading.value = false;
     }
   }
 }

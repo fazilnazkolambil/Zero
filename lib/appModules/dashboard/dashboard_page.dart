@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:zero/appModules/dashboard/dashboard_controller.dart';
+import 'package:zero/appModules/transactions/transaction_controller.dart';
 import 'package:zero/core/global_variables.dart';
 
 class DashboardPage extends StatelessWidget {
-  final DashboardController controller = Get.isRegistered()
+  final DashboardController dashboardController = Get.isRegistered()
       ? Get.find<DashboardController>()
       : Get.put(DashboardController());
+  final TransactionController transactionController = Get.isRegistered()
+      ? Get.find<TransactionController>()
+      : Get.put(TransactionController());
   DashboardPage({super.key});
 
   @override
@@ -22,18 +26,17 @@ class DashboardPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(
-                    Icons.arrow_back_ios,
-                    size: 18,
-                  ),
-                  onPressed: controller.previousWeek,
-                ),
-                Text(controller.getWeekRange()),
+                    icon: const Icon(
+                      Icons.arrow_back_ios,
+                      size: 18,
+                    ),
+                    onPressed: dashboardController.previousWeek),
+                Text(dashboardController.getWeekRange()),
                 IconButton(
                   icon: const Icon(Icons.arrow_forward_ios, size: 18),
-                  onPressed: controller.nextWeek,
+                  onPressed: dashboardController.nextWeek,
                   color: DateTime.now()
-                              .difference(controller.weekStart.value)
+                              .difference(dashboardController.weekStart.value)
                               .inDays <
                           7
                       ? Colors.grey
@@ -52,11 +55,14 @@ class DashboardPage extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _statCard(
-                      value: '4500.00',
-                      title: 'Cash received',
-                      subtitle: 'Total cash received',
-                      color: Colors.green),
+                  child: Obx(
+                    () => _statCard(
+                        value:
+                            transactionController.onlinePaid.value.toString(),
+                        title: 'Cash received',
+                        subtitle: 'Total cash received',
+                        color: Colors.green),
+                  ),
                 ),
                 Expanded(
                   child: _statCard(
@@ -160,7 +166,7 @@ class DashboardPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildDetails(value: 5000, label: 'Earnnings'),
-                _buildDetails(value: 1200, label: 'Refunds'),
+                _buildDetails(value: 1200, label: 'Tolls'),
                 _buildDetails(value: 6500, label: 'Cash collected'),
               ],
             ),
@@ -256,7 +262,7 @@ class DashboardPage extends StatelessWidget {
                   value: 3500.toStringAsFixed(2),
                 ),
                 CustomWidgets().textRow(
-                  label: 'Refund',
+                  label: 'Toll',
                   value: 250.toStringAsFixed(2),
                 ),
                 CustomWidgets().textRow(

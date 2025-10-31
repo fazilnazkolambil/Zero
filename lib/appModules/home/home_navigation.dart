@@ -30,12 +30,13 @@ class HomeNavigationPage extends StatelessWidget {
           title: Obx(() => Text(
               "${controller.homePages[controller.currentIndex.value]['label']}")),
           actions: [
-            IconButton(
-                onPressed: () => Get.to(() => WalletPage()),
-                icon: Icon(
-                  Icons.wallet,
-                  color: currentUser!.wallet < 0 ? Colors.red : Colors.white,
-                ))
+            if (currentUser != null && currentUser!.userRole == 'DRIVER')
+              IconButton(
+                  onPressed: () => Get.to(() => WalletPage()),
+                  icon: Icon(
+                    Icons.wallet,
+                    color: currentUser!.wallet < 0 ? Colors.red : Colors.white,
+                  ))
           ],
         ),
         bottomNavigationBar: controller.homePages.length > 4

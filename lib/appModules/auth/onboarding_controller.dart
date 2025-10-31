@@ -107,7 +107,7 @@ class OnboardingController extends GetxController {
         ownerId: currentUser!.uid,
         fleetName: fleetNameController.text.trim(),
         isHiring: isFleetHiring.value,
-        contactNumber: '+91${contactNumberController.text.trim()}',
+        contactNumber: contactNumberController.text.trim(),
         officeAddress: officeAddressController.text.trim(),
         parkingLocation: fleetLatLong,
         addedOn: DateTime.now().millisecondsSinceEpoch,
@@ -122,7 +122,7 @@ class OnboardingController extends GetxController {
       final docRef =
           await _firestore.collection('fleets').add(currentFleet.toMap());
       await docRef.update({'fleet_id': docRef.id});
-      currentFleet = currentFleet.copyWith(fleetId: docRef.id);
+      // currentFleet = currentFleet.copyWith(fleetId: docRef.id);
 
       await _firestore.collection('users').doc(currentUser!.uid).update({
         'user_role': 'FLEET_OWNER',
@@ -130,11 +130,11 @@ class OnboardingController extends GetxController {
         'fleet_id': docRef.id
       });
 
-      currentUser = currentUser!.copyWith(
-        userRole: 'FLEET_OWNER',
-        // fleet: currentFleet,
-        fleetId: docRef.id,
-      );
+      // currentUser = currentUser!.copyWith(
+      //   userRole: 'FLEET_OWNER',
+      //   // fleet: currentFleet,
+      //   fleetId: docRef.id,
+      // );
 
       Get.offAllNamed('/home');
     } catch (e) {

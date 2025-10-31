@@ -108,8 +108,11 @@ class DriverController extends GetxController {
       await _firestore
           .collection('users')
           .doc(userId)
-          .update({'fleet': null, 'user_role': 'USER'});
-      listDrivers();
+          .update({'fleet_id': null, 'user_role': 'USER'});
+      await _firestore.collection('fleets').doc(currentFleet!.fleetId).update({
+        'drivers': FieldValue.arrayRemove([userId])
+      });
+      await listDrivers();
     } catch (e) {
       log('Error removing driver : $e');
       Fluttertoast.showToast(

@@ -17,9 +17,9 @@ class EarningsController extends GetxController {
 
   var totalTrips = 0.obs;
   var totalShifts = 0.obs;
-  var totalNetFare = 0.0.obs;
+  var totalEarnings = 0.0.obs;
   var totalRent = 0.0.obs;
-  var totalRefund = 0.0.obs;
+  var totalToll = 0.0.obs;
   var fuelExpenses = 0.0.obs;
   var cashCollected = 0.0.obs;
   var otherFees = 0.0.obs;
@@ -83,10 +83,10 @@ class EarningsController extends GetxController {
     totalTrips.value =
         duties.fold(0, (value, d) => value + (d.totalTrips ?? 0));
     totalShifts.value = duties.fold(0, (value, d) => value + (d.selectedShift));
-    totalNetFare.value =
-        duties.fold(0.0, (value, d) => value + (d.netFare ?? 0));
+    totalEarnings.value =
+        duties.fold(0.0, (value, d) => value + (d.totalEarnings ?? 0));
     totalRent.value = duties.fold(0.0, (value, d) => value + (d.vehicleRent));
-    totalRefund.value = duties.fold(0.0, (value, d) => value + (d.refund ?? 0));
+    totalToll.value = duties.fold(0.0, (value, d) => value + (d.toll ?? 0));
     fuelExpenses.value =
         duties.fold(0.0, (value, d) => value + (d.fuelExpense ?? 0));
     cashCollected.value =
@@ -100,7 +100,7 @@ class EarningsController extends GetxController {
     final List<double> dailyTotals = List.filled(7, 0);
     for (var duty in duties) {
       // if (duty.startTime) continue;
-      final earning = duty.netFare! - duty.otherFees!;
+      final earning = duty.totalEarnings! - duty.otherFees!;
       double balance = earning - duty.vehicleRent - duty.fuelExpense!;
       final index =
           DateTime.fromMillisecondsSinceEpoch(duty.startTime).weekday - 1;

@@ -62,11 +62,11 @@ class DutyPage extends StatelessWidget {
             _textField(
               textInputType:
                   const TextInputType.numberWithOptions(decimal: true),
-              labelText: 'Total Net fare',
-              textController: controller.totalNetFareController,
+              labelText: 'Total earnings',
+              textController: controller.totalEarningsController,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter total net fare';
+                  return 'Please enter your total earnings';
                 } else if (!RegExp(r'^\d*\.?\d*$').hasMatch(value)) {
                   return 'Only numbers are allowed';
                 }
@@ -76,11 +76,11 @@ class DutyPage extends StatelessWidget {
             _textField(
               textInputType:
                   const TextInputType.numberWithOptions(decimal: true),
-              labelText: 'Refund',
-              textController: controller.refundController,
+              labelText: 'Toll',
+              textController: controller.tollController,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Please enter refund';
+                  return 'Please enter the toll';
                 } else if (!RegExp(r'^\d*\.?\d*$').hasMatch(value)) {
                   return 'Only numbers are allowed';
                 }
@@ -174,7 +174,7 @@ class DutyPage extends StatelessWidget {
   void _showSummary() {
     double topay = controller.finalValues['total_to_pay'];
     double totalEarnings =
-        double.parse(controller.totalNetFareController.text) -
+        double.parse(controller.totalEarningsController.text) -
             controller.finalValues['other_fees'];
     double balance = totalEarnings -
         controller.finalValues['vehicle_rent'] -
@@ -189,8 +189,8 @@ class DutyPage extends StatelessWidget {
             child: Column(
               children: [
                 CustomWidgets().textRow(
-                    label: 'Net fare',
-                    value: controller.totalNetFareController.text),
+                    label: 'Your earnings',
+                    value: controller.totalEarningsController.text),
                 CustomWidgets().textRow(
                     label: 'Other fees (-14%)',
                     value:
@@ -214,7 +214,7 @@ class DutyPage extends StatelessWidget {
                   ),
                 ),
                 CustomWidgets().textRow(
-                    label: 'Refund', value: controller.refundController.text),
+                    label: 'Toll', value: controller.tollController.text),
                 CustomWidgets().textRow(
                     label: 'Cash collected',
                     value: '-${controller.cashCollectedController.text}'),

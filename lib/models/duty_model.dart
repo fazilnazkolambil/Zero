@@ -1,6 +1,7 @@
 class DutyModel {
   String dutyId;
   String driverId;
+  String fleetId;
   String driverName;
   String vehicleId;
   String vehicleNumber;
@@ -9,16 +10,17 @@ class DutyModel {
   int selectedShift;
   int? endTime;
   int? totalTrips;
-  double? netFare;
+  double? totalEarnings;
   double? cashCollected;
   double? totaltoPay;
-  double? refund;
+  double? toll;
   double? fuelExpense;
   String dutyStatus;
   double? otherFees;
   DutyModel(
       {required this.dutyId,
       required this.driverId,
+      required this.fleetId,
       required this.driverName,
       required this.vehicleId,
       required this.vehicleNumber,
@@ -27,9 +29,9 @@ class DutyModel {
       required this.selectedShift,
       this.endTime,
       this.totalTrips,
-      this.netFare,
+      this.totalEarnings,
       this.cashCollected,
-      this.refund,
+      this.toll,
       this.fuelExpense,
       this.totaltoPay,
       required this.dutyStatus,
@@ -37,6 +39,7 @@ class DutyModel {
   DutyModel copywith({
     String? dutyId,
     String? driverId,
+    String? fleetId,
     String? driverName,
     String? vehicleId,
     String? vehicleNumber,
@@ -45,9 +48,9 @@ class DutyModel {
     int? selectedShift,
     int? endTime,
     int? totalTrips,
-    double? netFare,
+    double? totalEarnings,
     double? cashCollected,
-    double? refund,
+    double? toll,
     double? fuelExpense,
     double? totaltoPay,
     String? dutyStatus,
@@ -56,6 +59,7 @@ class DutyModel {
       DutyModel(
         dutyId: dutyId ?? this.dutyId,
         driverId: driverId ?? this.driverId,
+        fleetId: fleetId ?? this.fleetId,
         driverName: driverName ?? this.driverName,
         vehicleId: vehicleId ?? this.vehicleId,
         vehicleNumber: vehicleNumber ?? this.vehicleNumber,
@@ -64,9 +68,9 @@ class DutyModel {
         selectedShift: selectedShift ?? this.selectedShift,
         endTime: endTime ?? this.endTime,
         totalTrips: totalTrips ?? this.totalTrips,
-        netFare: netFare ?? this.netFare,
+        totalEarnings: totalEarnings ?? this.totalEarnings,
         cashCollected: cashCollected ?? this.cashCollected,
-        refund: refund ?? this.refund,
+        toll: toll ?? this.toll,
         fuelExpense: fuelExpense ?? this.fuelExpense,
         totaltoPay: totaltoPay ?? this.totaltoPay,
         dutyStatus: dutyStatus ?? this.dutyStatus,
@@ -76,6 +80,7 @@ class DutyModel {
     return DutyModel(
       dutyId: json['duty_id'] ?? '',
       driverId: json['driver_id'] ?? '',
+      fleetId: json['fleet_id'] ?? '',
       driverName: json['driver_name'] ?? '',
       vehicleId: json['vehicle_id'] ?? '',
       vehicleNumber: json['vehicle_number'] ?? '',
@@ -84,9 +89,9 @@ class DutyModel {
       selectedShift: json['selected_shift'] ?? 0,
       endTime: json['end_time'],
       totalTrips: json['total_trips'] ?? 0,
-      netFare: json['total_net_fare'] ?? 0,
+      totalEarnings: json['total_earnings'] ?? 0,
       cashCollected: json['cash_collected'] ?? 0,
-      refund: json['refund'] ?? 0,
+      toll: json['toll'] ?? 0,
       fuelExpense: json['fuel_expense'] ?? 0,
       totaltoPay: json['total_to_pay'] ?? 0,
       dutyStatus: json['duty_status'] ?? '',
@@ -96,6 +101,7 @@ class DutyModel {
   Map<String, dynamic> toJson() => {
         'duty_id': dutyId,
         'driver_id': driverId,
+        'fleet_id': fleetId,
         'driver_name': driverName,
         'vehicle_id': vehicleId,
         'vehicle_number': vehicleNumber,
@@ -104,9 +110,9 @@ class DutyModel {
         'selected_shift': selectedShift,
         'end_time': endTime,
         'total_trips': totalTrips,
-        'total_net_fare': netFare,
+        'total_earnings': totalEarnings,
         'cash_collected': cashCollected,
-        'refund': refund,
+        'toll': toll,
         'fuel_expense': fuelExpense,
         'total_to_pay': totaltoPay,
         'duty_status': dutyStatus,

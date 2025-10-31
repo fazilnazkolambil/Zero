@@ -12,4 +12,5 @@ class ImageConst {
 class NotificationTypes {
   static const fleetInvitation = 'FLEETINVITATION';
   static const joinRequest = 'JOINREQUEST';
+  static const payment = 'PAYMENT';
 }

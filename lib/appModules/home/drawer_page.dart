@@ -42,7 +42,7 @@ class DrawerPage extends StatelessWidget {
                             style: Get.textTheme.bodyLarge!,
                           ),
                           Text(
-                            currentUser!.email ?? '- N/A -',
+                            currentFleet!.fleetName,
                             style: Get.textTheme.bodySmall!,
                           )
                         ],

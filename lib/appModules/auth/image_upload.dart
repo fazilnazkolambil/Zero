@@ -133,6 +133,7 @@ class ImageUpload extends StatelessWidget {
             TextButton(
                 onPressed: () {
                   controller.uploads.remove(uploadLabel);
+                  controller.isLoading.value = false;
                   Get.back();
                 },
                 child: const Text('Cancel')),

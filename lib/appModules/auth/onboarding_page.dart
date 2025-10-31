@@ -153,7 +153,7 @@ class OnboardingPage extends GetView<AuthController> {
                             .collection('users')
                             .doc(currentUser!.uid)
                             .update({'user_role': 'USER'});
-                        currentUser = currentUser!.copyWith(userRole: 'USER');
+                        // currentUser = currentUser!.copyWith(userRole: 'USER');
                         Get.offAllNamed('/home');
                       },
                 style: ElevatedButton.styleFrom(

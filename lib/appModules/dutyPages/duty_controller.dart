@@ -18,8 +18,8 @@ class DutyController extends GetxController {
   RxString dutyHours = '12 hrs'.obs;
 
   final TextEditingController totalTripsController = TextEditingController();
-  final TextEditingController totalNetFareController = TextEditingController();
-  final TextEditingController refundController = TextEditingController();
+  final TextEditingController totalEarningsController = TextEditingController();
+  final TextEditingController tollController = TextEditingController();
   final TextEditingController cashCollectedController = TextEditingController();
   final TextEditingController fuelExpenseController = TextEditingController();
 
@@ -88,6 +88,7 @@ class DutyController extends GetxController {
           DutyModel newDuty = DutyModel(
               dutyId: dutyRef.id,
               driverId: currentUser!.uid,
+              fleetId: currentUser!.fleetId!,
               driverName: currentUser!.fullName,
               vehicleId: selectedVehicle.value!.vehicleId,
               vehicleNumber: selectedVehicle.value!.numberPlate,
@@ -150,8 +151,8 @@ class DutyController extends GetxController {
       final vehicleRef = _firestore.collection('vehicles').doc(duty.vehicleId);
 
       int totalTrips = int.parse(totalTripsController.text);
-      double totalNetFare = double.parse(totalNetFareController.text);
-      double refund = double.parse(refundController.text);
+      double totalEarnings = double.parse(totalEarningsController.text);
+      double totalToll = double.parse(tollController.text);
       double cashCollected = double.parse(cashCollectedController.text);
       double fuelExpense = fuelExpenseController.text.isEmpty
           ? 0
@@ -173,11 +174,12 @@ class DutyController extends GetxController {
             rentRules: rentRules,
             totalTrips: totalTrips,
             selectedShift: selectedShift);
-        double otherFees = totalNetFare * 0.14;
+        double otherFees = totalEarnings * 0.14;
         double totalToPay =
-            ((totalNetFare - otherFees) + refund - cashCollected) - vehicleRent;
+            ((totalEarnings - otherFees) + totalToll - cashCollected) -
+                vehicleRent;
         double driverBalance =
-            (totalNetFare - otherFees) - vehicleRent - fuelExpense;
+            (totalEarnings - otherFees) - vehicleRent - fuelExpense;
 
         finalValues = {
           'vehicle_rent': vehicleRent,
@@ -189,9 +191,9 @@ class DutyController extends GetxController {
           'duty_status': 'COMPLETED',
           'end_time': DateTime.now().millisecondsSinceEpoch,
           'total_trips': totalTrips,
-          'total_net_fare': totalNetFare,
+          'total_earnings': totalEarnings,
           'cash_collected': cashCollected,
-          'refund': refund,
+          'toll': totalToll,
           'fuel_expense': fuelExpense,
           'other_fees': otherFees,
           'total_to_pay': totalToPay,
@@ -215,11 +217,11 @@ class DutyController extends GetxController {
           'last_driver': currentUser!.fullName,
           'last_driver_id': currentUser!.uid,
         });
-        currentUser = currentUser!.copyWith(
-            wallet: currentUser!.wallet + totalToPay,
-            onDuty: null,
-            weeklyShift: currentUser!.weeklyShift ?? 0 + selectedShift,
-            weeklyTrip: currentUser!.weeklyTrip ?? 0 + totalTrips);
+        //   currentUser = currentUser!.copyWith(
+        //       wallet: currentUser!.wallet + totalToPay,
+        //       onDuty: null,
+        //       weeklyShift: currentUser!.weeklyShift ?? 0 + selectedShift,
+        //       weeklyTrip: currentUser!.weeklyTrip ?? 0 + totalTrips);
       });
     } catch (e) {
       log('Error ending duty : $e');

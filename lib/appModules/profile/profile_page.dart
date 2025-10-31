@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:zero/appModules/auth/auth_controller.dart';
+import 'package:zero/appModules/fleetPages/fleet_info.dart';
 import 'package:zero/appModules/profile/profile_controller.dart';
+import 'package:zero/appModules/profile/user_info.dart';
 import 'package:zero/core/const_page.dart';
 import 'package:zero/core/global_variables.dart';
 
@@ -21,8 +23,9 @@ class UserProfilePage extends StatelessWidget {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                _buildStatsCards(context),
-                if (currentFleet != null) _fleetDetails(),
+                if (currentUser!.userRole == 'DRIVER')
+                  _buildStatsCards(context),
+                if (currentUser!.fleetId != null) _fleetDetails(),
                 settingsOptions(),
                 SizedBox(
                   height: 50,
@@ -120,7 +123,8 @@ class UserProfilePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            currentUser!.email ?? currentUser!.phoneNumber,
+                            // currentUser!.email ?? currentUser!.phoneNumber,
+                            currentUser!.phoneNumber,
                             softWrap: true,
                             overflow: TextOverflow.ellipsis,
                             style: Get.textTheme.titleSmall!
@@ -209,6 +213,7 @@ class UserProfilePage extends StatelessWidget {
   }
 
   Widget _fleetDetails() {
+    bool isOwner = currentUser!.uid == currentFleet!.ownerId;
     return Container(
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -217,7 +222,8 @@ class UserProfilePage extends StatelessWidget {
         child: Column(
           children: [
             _buildSubheading(
-                title: 'Current fleet', icon: Icons.home_work_outlined),
+                title: isOwner ? 'Your Fleet' : 'Current Fleet',
+                icon: Icons.home_work_outlined),
             Card(
               child: ListTile(
                   leading: const CircleAvatar(
@@ -225,43 +231,96 @@ class UserProfilePage extends StatelessWidget {
                     child: Icon(Icons.directions_car, color: Colors.grey),
                   ),
                   title: Text(currentFleet!.fleetName),
-                  subtitle: Text(currentFleet!.contactNumber)),
+                  subtitle: Text(
+                    currentFleet!.officeAddress,
+                    style:
+                        Get.textTheme.bodySmall!.copyWith(color: Colors.grey),
+                  )),
             ),
             Padding(
               padding: const EdgeInsets.all(8),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                    fixedSize: Size.fromWidth(w), foregroundColor: Colors.red),
-                onPressed: () {
-                  if (currentUser!.onDuty != null) {
-                    Fluttertoast.showToast(
-                        msg:
-                            'Please end current duty before leaving this Fleet!',
-                        backgroundColor: Colors.red);
-                  } else if (currentUser!.wallet != 0) {
-                    Fluttertoast.showToast(
-                        msg:
-                            'Please clear your wallet before leaving this Fleet!',
-                        backgroundColor: Colors.red);
-                  } else {
-                    Get.dialog(AlertDialog(
-                      title: const Text('Leave fleet?'),
-                      content: const Text(
-                          'Are you sure you want to leave this Fleet?'),
-                      actions: [
-                        TextButton(
-                            onPressed: () => Get.back(),
-                            child: const Text('No, cancel')),
-                        TextButton(
-                            onPressed: () => controller.leaveFleet(),
-                            child: const Text('Yes, confirm')),
+              child: isOwner
+                  ? Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                                fixedSize: Size.fromWidth(w),
+                                foregroundColor: Colors.white),
+                            onPressed: () =>
+                                Get.to(() => const FleetInfoPage()),
+                            label: const Text('Edit'),
+                            icon: const Icon(Icons.edit),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                                fixedSize: Size.fromWidth(w),
+                                foregroundColor: Colors.red),
+                            onPressed: () => Get.dialog(AlertDialog(
+                              title: const Text('Delete fleet?'),
+                              content: const Text(
+                                  'Are you sure you want to permenently delete this Fleet?. This action cannot be undone.'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Get.back(),
+                                    child: const Text('No, Cancel')),
+                                TextButton(
+                                    onPressed: () {
+                                      if (currentFleet!.drivers!.isNotEmpty) {
+                                        Fluttertoast.showToast(
+                                            msg:
+                                                'Remove all drivers before deleting',
+                                            backgroundColor: Colors.red);
+                                      } else {
+                                        controller.deleteFleet();
+                                      }
+                                    },
+                                    child: const Text('Yes, Confirm')),
+                              ],
+                            )),
+                            label: const Text('Delete fleet'),
+                            icon: const Icon(Icons.delete_forever),
+                          ),
+                        ),
                       ],
-                    ));
-                  }
-                },
-                label: const Text('Leave fleet'),
-                icon: const Icon(Icons.login_outlined),
-              ),
+                    )
+                  : ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                          fixedSize: Size.fromWidth(w),
+                          foregroundColor: Colors.red),
+                      onPressed: () {
+                        if (currentUser!.onDuty != null) {
+                          Fluttertoast.showToast(
+                              msg:
+                                  'Please end current duty before leaving this Fleet!',
+                              backgroundColor: Colors.red);
+                        } else if (currentUser!.wallet < 0) {
+                          Fluttertoast.showToast(
+                              msg:
+                                  'Please clear your wallet before leaving this Fleet!',
+                              backgroundColor: Colors.red);
+                        } else {
+                          Get.dialog(AlertDialog(
+                            title: const Text('Leave fleet?'),
+                            content: const Text(
+                                'Are you sure you want to leave this Fleet?'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Get.back(),
+                                  child: const Text('No, cancel')),
+                              TextButton(
+                                  onPressed: () => controller.leaveFleet(),
+                                  child: const Text('Yes, confirm')),
+                            ],
+                          ));
+                        }
+                      },
+                      label: const Text('Leave fleet'),
+                      icon: const Icon(Icons.login_outlined),
+                    ),
             ),
           ],
         ));
@@ -277,25 +336,66 @@ class UserProfilePage extends StatelessWidget {
         _buildOptions(label: 'About us', onTap: () {}),
         _buildSubheading(
             title: 'Account settings', icon: Icons.account_circle_outlined),
-        _buildOptions(label: 'Personal info', onTap: () {}),
-        _buildOptions(label: 'Delete account', onTap: () {}),
         _buildOptions(
-          label: 'Logout',
-          onTap: () => Get.dialog(
-              barrierDismissible: false,
-              AlertDialog(
-                title: const Text('Logout?'),
-                content: const Text('Are you sure you want to logout?'),
+            label: 'Personal info',
+            onTap: () => Get.to(() => const UserInfoPage())),
+        _buildOptions(
+            label: 'Delete account',
+            onTap: () async {
+              if (currentUser!.onDuty != null) {
+                Fluttertoast.showToast(
+                    msg: 'Please end the current duty before deleting account',
+                    backgroundColor: Colors.red);
+                return;
+              }
+              if (currentUser!.wallet < 0) {
+                Fluttertoast.showToast(
+                    msg: 'Please clear your wallet before deleting account',
+                    backgroundColor: Colors.red);
+                return;
+              }
+              final confirm = await Get.dialog(AlertDialog(
+                title: const Text('Delete Account'),
+                content: const Text(
+                    'Are you sure you want to permanently delete your account?'),
                 actions: [
                   TextButton(
-                      onPressed: () => Get.back(),
-                      child: const Text('No, cancel')),
+                      onPressed: () => Get.back(result: false),
+                      child: const Text('No, Cancel')),
                   TextButton(
-                      onPressed: () async =>
-                          Get.put(AuthController()).logoutUser(),
+                      onPressed: () => Get.back(result: true),
                       child: const Text('Yes, confirm')),
                 ],
-              )),
+              ));
+              if (confirm == true) {
+                controller.deleteUser();
+              }
+            }),
+        _buildOptions(
+          label: 'Logout',
+          onTap: () {
+            if (currentUser!.onDuty != null) {
+              Fluttertoast.showToast(
+                  msg: 'Please end the current duty before logging out',
+                  backgroundColor: Colors.red);
+              return;
+            }
+            Get.dialog(
+                barrierDismissible: false,
+                AlertDialog(
+                  title: const Text('Logout?'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text('No, cancel')),
+                    TextButton(
+                        onPressed: () async =>
+                            Get.put(AuthController()).logoutUser(),
+                        child: const Text('Yes, confirm')),
+                  ],
+                ));
+          },
         )
       ],
     );

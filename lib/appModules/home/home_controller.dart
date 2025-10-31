@@ -12,14 +12,17 @@ import 'package:zero/appModules/home/home_page.dart';
 import 'package:zero/appModules/earningPages/earning_page.dart';
 import 'package:zero/appModules/inbox/inbox_page.dart';
 import 'package:zero/appModules/profile/profile_page.dart';
+import 'package:zero/appModules/transactions/transactions_page.dart';
 import 'package:zero/appModules/vehiclePages/vehicles_page.dart';
 import 'package:zero/core/global_variables.dart';
 import 'package:zero/models/fleet_model.dart';
+import 'package:zero/models/user_model.dart';
 import 'package:zero/models/vehicle_model.dart';
 
 class HomeController extends GetxController {
   @override
   void onInit() {
+    streamUser();
     if (currentUser!.fleetId != null) {
       loadFleet();
     }
@@ -41,7 +44,7 @@ class HomeController extends GetxController {
         return [
           {
             'label': 'Fleets',
-            'icon': Icons.email,
+            'icon': Icons.home_work,
             'page': FleetListPage(),
           },
           {
@@ -51,7 +54,7 @@ class HomeController extends GetxController {
           },
           {
             'label': 'Profile',
-            'icon': Icons.email,
+            'icon': Icons.person,
             'page': UserProfilePage(),
           },
         ].obs;
@@ -73,14 +76,9 @@ class HomeController extends GetxController {
             'page': DriversPage(),
           },
           {
-            'label': 'Home',
-            'icon': Icons.home_filled,
-            'page': HomePage(),
-          },
-          {
-            'label': 'Earnings',
-            'icon': Icons.money,
-            'page': EarningPage(),
+            'label': 'Transactions',
+            'icon': Icons.payment,
+            'page': TransactionsPage(),
           },
           {
             'label': 'Inbox',
@@ -88,8 +86,8 @@ class HomeController extends GetxController {
             'page': InboxPage(),
           },
           {
-            'label': 'Profile',
-            'icon': Icons.person,
+            'label': 'Settings',
+            'icon': Icons.settings,
             'page': UserProfilePage(),
           },
         ].obs;
@@ -138,6 +136,7 @@ class HomeController extends GetxController {
       final fleet = jsonDecode(fleetCache);
       currentFleet = FleetModel.fromMap(fleet);
     }
+    print('-- FLEET STREAM --');
     _firestore
         .collection('fleets')
         .doc(currentUser!.fleetId)
@@ -150,22 +149,36 @@ class HomeController extends GetxController {
     });
   }
 
+  streamUser() async {
+    print('-- USER STREAM --');
+    _firestore
+        .collection('users')
+        .doc(currentUser!.uid)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        currentUser =
+            UserModel.fromMap(snapshot.data() as Map<String, dynamic>);
+      }
+    });
+  }
+
   listVehicles() async {
     try {
       isVehiclesLoading.value = true;
-
       vehicles.clear();
       var data = await _firestore
           .collection('vehicles')
-          .where('fleet_id', isEqualTo: currentFleet!.fleetId)
+          .where('fleet_id', isEqualTo: currentUser!.fleetId)
           .where('on_duty', isNull: true)
           .get();
-      vehicles.value =
-          data.docs.map((e) => VehicleModel.fromMap(e.data())).toList();
-
+      if (data.docs.isNotEmpty) {
+        vehicles.value =
+            data.docs.map((e) => VehicleModel.fromMap(e.data())).toList();
+      }
       // box.put('vehicles', jsonEncode(vehicles.toJson()));
     } catch (e) {
-      log('Error getting vehicles : $e');
+      log('Error getting vehicles in home controller: $e');
     } finally {
       isVehiclesLoading.value = false;
     }
@@ -176,6 +189,6 @@ class HomeController extends GetxController {
       Get.back();
     }
     currentIndex.value = index;
-    print('aaaaaaa === ${currentIndex.value} = $index');
+    // log(currentUser!.toMap().toString());
   }
 }

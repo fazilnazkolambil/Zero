@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TransactionModel {
   String transactionId;
-  String userId;
+  String senderId;
   String fleetId;
   int paymentTime;
   double amount;
@@ -11,7 +11,7 @@ class TransactionModel {
   String paymentMethod;
   TransactionModel({
     required this.transactionId,
-    required this.userId,
+    required this.senderId,
     required this.fleetId,
     required this.paymentTime,
     required this.amount,
@@ -21,7 +21,7 @@ class TransactionModel {
   });
   TransactionModel copywith({
     String? transactionId,
-    String? userId,
+    String? senderId,
     String? fleetId,
     int? paymentTime,
     double? amount,
@@ -31,7 +31,7 @@ class TransactionModel {
   }) =>
       TransactionModel(
         transactionId: transactionId ?? this.transactionId,
-        userId: userId ?? this.userId,
+        senderId: senderId ?? this.senderId,
         fleetId: fleetId ?? this.fleetId,
         paymentTime: paymentTime ?? this.paymentTime,
         amount: amount ?? this.amount,
@@ -42,7 +42,7 @@ class TransactionModel {
   factory TransactionModel.fromMap(Map<String, dynamic> json) {
     return TransactionModel(
       transactionId: json['transaction_id'] ?? '',
-      userId: json['user_id'] ?? '',
+      senderId: json['sender_id'] ?? '',
       fleetId: json['fleet_id'] ?? '',
       paymentTime: json['payment_time'],
       amount: json['amount'] ?? 0,
@@ -53,7 +53,7 @@ class TransactionModel {
   }
   Map<String, dynamic> toJson() => {
         'transaction_id': transactionId,
-        'sender_id': userId,
+        'sender_id': senderId,
         'fleet_id': fleetId,
         'payment_time': paymentTime,
         'amount': amount,

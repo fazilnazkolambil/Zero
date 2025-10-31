@@ -17,32 +17,55 @@ class VehiclesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Scaffold(
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              controller.clearAll();
-              Get.to(() => const AddVehiclePage());
-            },
-            child: const Icon(Icons.add),
-          ),
-          // appBar: AppBar(
-          //   flexibleSpace: FlexibleSpaceBar(
-          //     background: vehicleStats(),
-          //   ),
-          // ),
-          body: Obx(
-            () => RefreshIndicator(
-              color: ColorConst.primaryColor,
-              onRefresh: () => controller.listVehicles(),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  children: [_buildVehiclesTab()],
-                ),
-              ),
-            ),
-          )),
-    );
+        child: Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          controller.clearAll();
+          Get.to(() => const AddVehiclePage());
+        },
+        child: const Icon(Icons.add),
+      ),
+      appBar: AppBar(
+        flexibleSpace: FlexibleSpaceBar(
+          background: vehicleStats(),
+        ),
+      ),
+      body: RefreshIndicator(
+          color: ColorConst.primaryColor,
+          onRefresh: () => controller.listVehicles(),
+          child: Obx(() {
+            if (controller.isVehiclesLoading.value) {
+              return const Center(child: CupertinoActivityIndicator());
+            }
+            if (controller.vehicles.isEmpty) {
+              return Center(
+                  child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.directions_car,
+                      size: 80, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No vehicles added yet',
+                    style: Get.textTheme.titleLarge!
+                        .copyWith(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Tap the + button to add new',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => controller.listVehicles(),
+                    label: const Text('Refresh'),
+                    icon: const Icon(Icons.refresh),
+                  )
+                ],
+              ));
+            }
+            return _buildVehiclesTab();
+          })),
+    ));
   }
 
   Widget vehicleStats() {
@@ -57,7 +80,7 @@ class VehiclesPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(controller.vehicles.length.toString()),
-              SizedBox(height: w * 0.03),
+              const SizedBox(height: 5),
               const Text(
                 'Vehicles',
                 style: TextStyle(
@@ -71,7 +94,7 @@ class VehiclesPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(inUseVehicles.toString()),
-              SizedBox(height: w * 0.03),
+              const SizedBox(height: 5),
               const Text(
                 'In use',
                 style: TextStyle(
@@ -87,7 +110,7 @@ class VehiclesPage extends StatelessWidget {
               Text(
                 availableVehicles.toString(),
               ),
-              SizedBox(height: w * 0.03),
+              const SizedBox(height: 5),
               const Text(
                 'On rest',
                 style: TextStyle(
@@ -103,33 +126,8 @@ class VehiclesPage extends StatelessWidget {
   }
 
   Widget _buildVehiclesTab() {
-    if (controller.vehicles.isEmpty) {
-      return SizedBox(
-        height: 500,
-        width: w,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.directions_car, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              'No vehicles added yet',
-              style:
-                  Get.textTheme.titleLarge!.copyWith(color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Tap the + button to add new',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      );
-    }
     return ListView.builder(
         padding: const EdgeInsets.all(5),
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
         itemCount: controller.vehicles.length,
         itemBuilder: (context, index) {
           final vehicle = controller.vehicles[index];
@@ -156,7 +154,7 @@ class VehiclesPage extends StatelessWidget {
             theme: const ExpandableThemeData(hasIcon: false, useInkWell: false),
             collapsed: const SizedBox(),
             expanded: Padding(
-              padding: EdgeInsets.all(w * 0.03),
+              padding: EdgeInsets.symmetric(horizontal: w * 0.03),
               child: Column(
                 children: [
                   vehicle.onDuty == null
@@ -210,8 +208,6 @@ class VehiclesPage extends StatelessWidget {
               ),
             ),
             header: ListTile(
-                contentPadding: EdgeInsets.all(w * 0.03),
-                minLeadingWidth: w * 0.15,
                 leading: Padding(
                   padding: EdgeInsets.symmetric(horizontal: w * 0.03),
                   child: Column(
@@ -221,11 +217,9 @@ class VehiclesPage extends StatelessWidget {
                         Icons.circle,
                         size: w * 0.04,
                         color:
-                            vehicle.onDuty == null ? Colors.green : Colors.red,
+                            vehicle.onDuty == null ? Colors.red : Colors.green,
                       ),
-                      SizedBox(
-                        height: h * 0.01,
-                      ),
+                      const SizedBox(height: 5),
                       Text(
                         vehicle.onDuty != null ? 'On duty' : 'On rest',
                         textAlign: TextAlign.center,

@@ -148,7 +148,6 @@ class AuthController extends GetxController {
         'image_path': pickImage.path,
         'image_key': imageKey
       };
-      log('Uploads ==== $uploads');
     }
   }
 
@@ -176,7 +175,8 @@ class AuthController extends GetxController {
           uid: userId ?? currentUser!.uid,
           fullName: fullnameController.text.trim(),
           phoneNumber: phonenumberController.text,
-          email: emailController.text.trim(),
+          email:
+              emailController.text.isEmpty ? null : emailController.text.trim(),
           licenceUrl: uploads['driving_licence']['image_url'],
           profilePicUrl: uploads['profile_picture']['image_url'],
           aadhaarUrl: uploads['aadhaar_card']['image_url'],

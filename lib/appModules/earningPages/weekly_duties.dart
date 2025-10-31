@@ -83,7 +83,7 @@ class WeeklyDuties extends GetView<EarningsController> {
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
                 final duty = controller.duties[index];
-                double balance = ((duty.netFare! - duty.otherFees!)) -
+                double balance = ((duty.totalEarnings! - duty.otherFees!)) -
                     duty.vehicleRent! -
                     duty.fuelExpense!;
                 final dutyDate =
@@ -176,12 +176,12 @@ class WeeklyDuties extends GetView<EarningsController> {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                       child: Column(
                         children: [
-                          _infoRow(
-                              'Net fare', duty.netFare!.toStringAsFixed(2)),
+                          _infoRow('Your earnings',
+                              duty.totalEarnings!.toStringAsFixed(2)),
                           _infoRow('Other fees',
                               "-${duty.otherFees!.toStringAsFixed(2)}"),
                           const Divider(color: Colors.white24),
-                          _infoRow('Refund', duty.refund!.toStringAsFixed(2)),
+                          _infoRow('Toll', duty.toll!.toStringAsFixed(2)),
                           _infoRow('Cash collected',
                               "-${duty.cashCollected!.toStringAsFixed(2)}"),
                           _infoRow('Vehicle rent',
